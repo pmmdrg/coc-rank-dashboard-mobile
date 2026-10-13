@@ -34,14 +34,22 @@ object RankingCalculator {
     }
 
     /**
-     * Phân loại đánh giá kỹ năng/mức cúp:
-     * - Thống trị (Dominant): >= 1200 cúp
-     * - Vượt trội (Superior): 1000 đến < 1200 cúp
-     * - Tiềm năng (Potential): 800 đến < 1000 cúp
-     * - Báo động (Alarm): < 800 cúp
+     * Phân loại đánh giá kỹ năng/mức cúp theo % so với cúp tối đa ban đầu x:
+     * - Áp đảo (Dominant): >= 70% x
+     * - Vượt trội (Superior): 60% đến < 70% x
+     * - Tiềm năng (Potential): 50% đến < 60% x
+     * - Báo động (Alarm): < 50% x
      */
-    fun calculatePlayerRating(currentCups: Int): RatingCategory {
-        return RatingCategory.fromCups(currentCups)
+    fun calculatePlayerRating(currentCups: Int, initialMaxCups: Int): RatingCategory {
+        return RatingCategory.fromCups(currentCups, initialMaxCups)
+    }
+
+    fun calculatePlayerRating(
+        currentCups: Int,
+        maxAttacks: Int = 24,
+        maxDefenses: Int = maxAttacks
+    ): RatingCategory {
+        return RatingCategory.fromCups(currentCups, maxAttacks, maxDefenses)
     }
 
     /**
@@ -73,7 +81,8 @@ object RankingCalculator {
      */
     fun normalizeSeason(season: Season): Season {
         val maxAttacks = season.maxAttacks.takeIf { it > 0 } ?: 24
-        val maxDefenses = season.maxDefenses.takeIf { it > 0 } ?: 24
+        val maxDefenses = season.maxDefenses.takeIf { it > 0 } ?: maxAttacks
+        val initialMaxCups = (maxAttacks + maxDefenses) * 40
         val myCleanTag = season.myPlayerId.trim().uppercase().removePrefix("#")
 
         val updatedPlayers = season.players.mapIndexed { idx, p ->
@@ -87,7 +96,7 @@ object RankingCalculator {
                 maxAttacks = maxAttacks,
                 maxDefenses = maxDefenses
             )
-            val rating = calculatePlayerRating(currentCups)
+            val rating = calculatePlayerRating(currentCups, initialMaxCups)
             val pTag = (p.playerTag ?: p.id).trim().uppercase().removePrefix("#")
             val isMe = myCleanTag.isNotBlank() && (pTag == myCleanTag || p.id.uppercase().removePrefix("#") == myCleanTag)
 

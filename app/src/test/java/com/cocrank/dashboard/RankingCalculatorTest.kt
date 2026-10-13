@@ -27,14 +27,24 @@ class RankingCalculatorTest {
 
     @Test
     fun testCalculateRating() {
-        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(1250))
-        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(1200))
-        assertEquals(RatingCategory.SUPERIOR, RankingCalculator.calculatePlayerRating(1199))
-        assertEquals(RatingCategory.SUPERIOR, RankingCalculator.calculatePlayerRating(1000))
-        assertEquals(RatingCategory.POTENTIAL, RankingCalculator.calculatePlayerRating(950))
-        assertEquals(RatingCategory.POTENTIAL, RankingCalculator.calculatePlayerRating(800))
-        assertEquals(RatingCategory.ALARM, RankingCalculator.calculatePlayerRating(799))
+        // Mặc định: 24 lượt công + 24 lượt thủ -> x = 1920 cúp
+        // 70% x = 1344, 60% x = 1152, 50% x = 960
+        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(1400))
+        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(1344))
+        assertEquals(RatingCategory.SUPERIOR, RankingCalculator.calculatePlayerRating(1343))
+        assertEquals(RatingCategory.SUPERIOR, RankingCalculator.calculatePlayerRating(1152))
+        assertEquals(RatingCategory.POTENTIAL, RankingCalculator.calculatePlayerRating(1151))
+        assertEquals(RatingCategory.POTENTIAL, RankingCalculator.calculatePlayerRating(960))
+        assertEquals(RatingCategory.ALARM, RankingCalculator.calculatePlayerRating(959))
         assertEquals(RatingCategory.ALARM, RankingCalculator.calculatePlayerRating(500))
+
+        // Giải đấu khác: 12 lượt công + 12 lượt thủ -> x = 960 cúp
+        // 70% x = 672, 60% x = 576, 50% x = 480
+        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(700, maxAttacks = 12))
+        assertEquals(RatingCategory.DOMINANT, RankingCalculator.calculatePlayerRating(672, maxAttacks = 12))
+        assertEquals(RatingCategory.SUPERIOR, RankingCalculator.calculatePlayerRating(600, maxAttacks = 12))
+        assertEquals(RatingCategory.POTENTIAL, RankingCalculator.calculatePlayerRating(500, maxAttacks = 12))
+        assertEquals(RatingCategory.ALARM, RankingCalculator.calculatePlayerRating(400, maxAttacks = 12))
     }
 
     @Test

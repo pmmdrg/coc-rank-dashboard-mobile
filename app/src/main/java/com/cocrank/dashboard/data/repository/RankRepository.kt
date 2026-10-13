@@ -205,13 +205,13 @@ class RankRepository(
     fun getSampleSeason(): Season {
         val myTag = "#90UQRP0"
         val samplePlayers = listOf(
-            Player(id = "p-1", name = "Chief Arthur", currentCups = 1240, attacks = 24, defenses = 22, playerTag = "#P111111", clanName = "Vietnam Legends", rating = RatingCategory.DOMINANT),
-            Player(id = "p-2", name = "Dragon Slayer", currentCups = 1180, attacks = 22, defenses = 20, playerTag = "#P222222", clanName = "Elite Warriors", rating = RatingCategory.SUPERIOR),
-            Player(id = myTag, name = "Bạn (Hero)", currentCups = 1120, attacks = 18, defenses = 16, playerTag = myTag, clanName = "Golden Stars", isMe = true, rating = RatingCategory.SUPERIOR),
-            Player(id = "p-4", name = "Ghost Hunter", currentCups = 1040, attacks = 20, defenses = 24, playerTag = "#P444444", clanName = "Saigon Club", rating = RatingCategory.SUPERIOR),
-            Player(id = "p-5", name = "Dark Knight", currentCups = 960, attacks = 14, defenses = 12, playerTag = "#P555555", clanName = "Hanoi Clan", rating = RatingCategory.POTENTIAL),
-            Player(id = "p-6", name = "Valkyrie Queen", currentCups = 890, attacks = 15, defenses = 18, playerTag = "#P666666", clanName = "Thunderbolt", rating = RatingCategory.POTENTIAL),
-            Player(id = "p-7", name = "P.E.K.K.A Boy", currentCups = 780, attacks = 10, defenses = 8, playerTag = "#P777777", clanName = "Royal Aces", rating = RatingCategory.ALARM),
+            Player(id = "p-1", name = "Chief Arthur", currentCups = 1420, attacks = 24, defenses = 22, playerTag = "#P111111", clanName = "Vietnam Legends", rating = RatingCategory.DOMINANT),
+            Player(id = "p-2", name = "Dragon Slayer", currentCups = 1240, attacks = 22, defenses = 20, playerTag = "#P222222", clanName = "Elite Warriors", rating = RatingCategory.SUPERIOR),
+            Player(id = myTag, name = "Bạn (Hero)", currentCups = 1200, attacks = 18, defenses = 16, playerTag = myTag, clanName = "Golden Stars", isMe = true, rating = RatingCategory.SUPERIOR),
+            Player(id = "p-4", name = "Ghost Hunter", currentCups = 1160, attacks = 20, defenses = 24, playerTag = "#P444444", clanName = "Saigon Club", rating = RatingCategory.SUPERIOR),
+            Player(id = "p-5", name = "Dark Knight", currentCups = 1040, attacks = 14, defenses = 12, playerTag = "#P555555", clanName = "Hanoi Clan", rating = RatingCategory.POTENTIAL),
+            Player(id = "p-6", name = "Valkyrie Queen", currentCups = 980, attacks = 15, defenses = 18, playerTag = "#P666666", clanName = "Thunderbolt", rating = RatingCategory.POTENTIAL),
+            Player(id = "p-7", name = "P.E.K.K.A Boy", currentCups = 850, attacks = 10, defenses = 8, playerTag = "#P777777", clanName = "Royal Aces", rating = RatingCategory.ALARM),
             Player(id = "p-8", name = "Barbarian King", currentCups = 650, attacks = 6, defenses = 6, playerTag = "#P888888", clanName = "Novice Clan", rating = RatingCategory.ALARM)
         )
 

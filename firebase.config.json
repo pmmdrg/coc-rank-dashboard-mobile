@@ -3,5 +3,5 @@
     "projectId":  "coc-rank-mobile",
     "groups":  "",
     "testers":  "",
-    "releaseNotes":  "CoC Rank Mobile v1.0.4 - Tự động tích hợp sẵn Proxy & Token API (Chỉ cần nhập Player Tag)"
+    "releaseNotes":  "CoC Rank Mobile v1.0.5 - Công thức đánh giá phong độ theo % cúp tối đa (Áp đảo >= 70%, Vượt trội >= 60%, Tiềm năng >= 50%)"
 }

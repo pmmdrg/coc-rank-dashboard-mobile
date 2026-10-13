@@ -1,17 +1,28 @@
 package com.cocrank.dashboard.domain.model
 
 enum class RatingCategory(val displayName: String, val colorHex: Long) {
-    DOMINANT("Thống trị", 0xFF8B5CF6),  // >= 1200 cup
-    SUPERIOR("Vượt trội", 0xFF10B981),  // 1000 đến < 1200 cup
-    POTENTIAL("Tiềm năng", 0xFF0284C7), // 800 đến < 1000 cup
-    ALARM("Báo động", 0xFFE11D48);      // < 800 cup
+    DOMINANT("Áp đảo", 0xFF8B5CF6),     // >= 70% cup tối đa ban đầu
+    SUPERIOR("Vượt trội", 0xFF10B981),  // 60% đến < 70% cup tối đa ban đầu
+    POTENTIAL("Tiềm năng", 0xFF0284C7), // 50% đến < 60% cup tối đa ban đầu
+    ALARM("Báo động", 0xFFE11D48);      // < 50% cup tối đa ban đầu
 
     companion object {
-        fun fromCups(cups: Int): RatingCategory = when {
-            cups >= 1200 -> DOMINANT
-            cups >= 1000 -> SUPERIOR
-            cups >= 800 -> POTENTIAL
-            else -> ALARM
+        fun fromCups(cups: Int, initialMaxCups: Int): RatingCategory {
+            if (initialMaxCups <= 0) return ALARM
+            val ratio = cups.toDouble() / initialMaxCups
+            return when {
+                ratio >= 0.70 -> DOMINANT
+                ratio >= 0.60 -> SUPERIOR
+                ratio >= 0.50 -> POTENTIAL
+                else -> ALARM
+            }
+        }
+
+        fun fromCups(cups: Int, maxAttacks: Int = 24, maxDefenses: Int = maxAttacks): RatingCategory {
+            val safeAtk = if (maxAttacks > 0) maxAttacks else 24
+            val safeDef = if (maxDefenses > 0) maxDefenses else safeAtk
+            val initialMaxCups = (safeAtk + safeDef) * 40
+            return fromCups(cups, initialMaxCups)
         }
 
         fun fromString(str: String?): RatingCategory = when (str?.lowercase()) {
