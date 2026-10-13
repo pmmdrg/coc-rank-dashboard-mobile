@@ -2,6 +2,7 @@ package com.cocrank.dashboard.ui.screens.settings
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -53,6 +54,7 @@ fun SettingsScreen(
     var playerTag by remember(state.savedPlayerTag) { mutableStateOf(state.savedPlayerTag) }
     var apiToken by remember(state.savedApiToken) { mutableStateOf(state.savedApiToken) }
     var proxyUrl by remember(state.savedProxyUrl) { mutableStateOf(state.savedProxyUrl) }
+    var showAdvanced by remember { mutableStateOf(false) }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -93,35 +95,13 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = playerTag,
                             onValueChange = { playerTag = it },
-                            label = { Text("Mã Player Tag") },
+                            label = { Text("Mã Player Tag (#TAG)") },
                             placeholder = { Text("#90UQRP0") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(8.dp),
                             colors = textFieldColors
                         )
-                        OutlinedTextField(
-                            value = apiToken,
-                            onValueChange = { apiToken = it },
-                            label = { Text("Supercell API Token (Bearer)") },
-                            placeholder = { Text("Nhập token nếu gọi trực tiếp") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = textFieldColors
-                        )
-                        OutlinedTextField(
-                            value = proxyUrl,
-                            onValueChange = { proxyUrl = it },
-                            label = { Text("Proxy URL Backend (Tùy chọn)") },
-                            placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
-                            singleLine = true,
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
-                            colors = textFieldColors
-                        )
-
-                        Spacer(modifier = Modifier.height(6.dp))
 
                         Button(
                             onClick = {
@@ -131,6 +111,52 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Lưu Thay Đổi", color = Color.White, fontWeight = FontWeight.Bold)
+                        }
+
+                        // Collapsed Advanced Options for Power Users
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(6.dp))
+                                .clickable { showAdvanced = !showAdvanced }
+                                .padding(vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                text = if (showAdvanced) "Ẩn cấu hình máy chủ nâng cao ▲" else "Cấu hình máy chủ nâng cao (Tùy chọn) ▼",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+
+                        if (showAdvanced) {
+                            Text(
+                                text = "Mặc định ứng dụng đã tự động cấu hình sẵn Proxy RoyaleAPI và Token API chính thức. Bạn chỉ cần sửa nếu muốn sử dụng proxy/token riêng của mình.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
+                                fontSize = 11.sp
+                            )
+                            OutlinedTextField(
+                                value = apiToken,
+                                onValueChange = { apiToken = it },
+                                label = { Text("Supercell API Token (Tùy chọn)") },
+                                placeholder = { Text("Mặc định dùng hệ thống") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = textFieldColors
+                            )
+                            OutlinedTextField(
+                                value = proxyUrl,
+                                onValueChange = { proxyUrl = it },
+                                label = { Text("Proxy URL Backend (Tùy chọn)") },
+                                placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth(),
+                                shape = RoundedCornerShape(8.dp),
+                                colors = textFieldColors
+                            )
                         }
                     }
                 }
@@ -172,7 +198,7 @@ fun SettingsScreen(
                 SettingsSectionCard(title = "Thông Tin Ứng Dụng") {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "CoC Rank Dashboard Mobile v1.0.2",
+                            text = "CoC Rank Dashboard Mobile v1.0.3",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )

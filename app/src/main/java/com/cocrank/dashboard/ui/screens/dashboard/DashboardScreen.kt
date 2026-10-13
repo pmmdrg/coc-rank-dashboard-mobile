@@ -70,11 +70,9 @@ fun DashboardScreen(
     if (state.showConfigDialog) {
         SyncPromptDialog(
             initialPlayerTag = state.savedPlayerTag,
-            initialApiToken = state.savedApiToken,
-            initialProxyUrl = state.savedProxyUrl,
             onDismiss = { viewModel.dismissConfigDialog() },
-            onConfirm = { tag, token, proxy ->
-                viewModel.saveConfig(tag, token, proxy)
+            onConfirm = { tag ->
+                viewModel.savePlayerTag(tag)
             }
         )
     }

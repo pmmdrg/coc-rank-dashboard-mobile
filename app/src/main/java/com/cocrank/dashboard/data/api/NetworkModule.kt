@@ -21,14 +21,17 @@ object NetworkModule {
         .build()
 
     fun createService(baseUrl: String? = null): CocApiService {
-        val url = if (!baseUrl.isNullOrBlank()) {
-            if (baseUrl.endsWith("/")) baseUrl else "$baseUrl/"
+        val raw = baseUrl?.trim()?.ifBlank { null } ?: CocApiConfig.DEFAULT_PROXY_URL
+        val normalized = raw.trimEnd('/')
+        // Nếu URL truyền vào có đuôi /v1 thì chuẩn hóa thành base URL cho Retrofit
+        val finalUrl = if (normalized.endsWith("/v1", ignoreCase = true)) {
+            normalized.removeSuffix("/v1").removeSuffix("/V1").trimEnd('/') + "/"
         } else {
-            DEFAULT_BASE_URL
+            "$normalized/"
         }
 
         return Retrofit.Builder()
-            .baseUrl(url)
+            .baseUrl(finalUrl)
             .client(okHttpClient)
             .addConverterFactory(GsonConverterFactory.create())
             .build()

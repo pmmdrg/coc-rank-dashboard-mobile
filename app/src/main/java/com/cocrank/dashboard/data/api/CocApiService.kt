@@ -10,21 +10,21 @@ interface CocApiService {
 
     @GET("v1/players/{playerTag}")
     suspend fun getPlayer(
-        @Path("playerTag") playerTag: String,
+        @Path("playerTag", encoded = true) playerTag: String,
         @Header("Authorization") authHeader: String? = null
     ): Response<CocPlayerResponse>
 
     @GET("v1/leagues/{leagueId}/seasons/{seasonId}/groups/{groupTag}")
     suspend fun getLeagueSeasonGroup(
-        @Path("leagueId") leagueId: String,
-        @Path("seasonId") seasonId: String,
-        @Path("groupTag") groupTag: String,
+        @Path("leagueId", encoded = true) leagueId: String,
+        @Path("seasonId", encoded = true) seasonId: String,
+        @Path("groupTag", encoded = true) groupTag: String,
         @Header("Authorization") authHeader: String? = null
     ): Response<CocLeagueGroupResponse>
 
     @GET("v1/clans/{clanTag}")
     suspend fun getClan(
-        @Path("clanTag") clanTag: String,
+        @Path("clanTag", encoded = true) clanTag: String,
         @Header("Authorization") authHeader: String? = null
     ): Response<CocClanDetailResponse>
 

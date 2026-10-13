@@ -17,10 +17,32 @@ android {
         applicationId = "com.cocrank.dashboard"
         minSdk = 26
         targetSdk = 35
-        versionCode = 3
-        versionName = "1.0.2"
+        versionCode = 4
+        versionName = "1.0.3"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+        val secretsFile = rootProject.file("secrets.properties")
+        val secrets = Properties()
+        if (secretsFile.exists()) {
+            secrets.load(FileInputStream(secretsFile))
+        }
+        val localPropsFile = rootProject.file("local.properties")
+        val localProps = Properties()
+        if (localPropsFile.exists()) {
+            localProps.load(FileInputStream(localPropsFile))
+        }
+
+        val cocApiToken = (secrets.getProperty("COC_API_TOKEN")
+            ?: localProps.getProperty("COC_API_TOKEN")
+            ?: System.getenv("COC_API_TOKEN") ?: "").replace("\"", "\\\"")
+
+        val cocProxyUrl = (secrets.getProperty("COC_PROXY_URL")
+            ?: localProps.getProperty("COC_PROXY_URL")
+            ?: System.getenv("COC_PROXY_URL") ?: "https://cocproxy.royaleapi.dev/v1").replace("\"", "\\\"")
+
+        buildConfigField("String", "COC_API_TOKEN", "\"$cocApiToken\"")
+        buildConfigField("String", "COC_PROXY_URL", "\"$cocProxyUrl\"")
     }
 
     val keystorePropsFile = file("keystore.properties")
@@ -70,6 +92,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 

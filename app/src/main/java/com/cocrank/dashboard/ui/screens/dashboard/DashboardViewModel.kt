@@ -181,6 +181,14 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
     }
 
+    fun savePlayerTag(tag: String) {
+        viewModelScope.launch {
+            userPreferences.savePlayerTag(tag)
+            _uiState.update { it.copy(showConfigDialog = false) }
+            syncData()
+        }
+    }
+
     fun saveConfig(tag: String, token: String, proxy: String) {
         viewModelScope.launch {
             userPreferences.savePlayerTag(tag)

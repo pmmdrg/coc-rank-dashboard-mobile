@@ -24,7 +24,17 @@ if (-not (Test-Path $ApkPath)) {
     $ApkPath = "$ScriptDir\dist\CoCRank-release-latest.apk"
 }
 
-# 2. Doc cau hinh tu firebase.config.json hoac bien moi truong
+# 2. Doc cau hinh tu secrets.properties, firebase.config.json hoac bien moi truong
+$Secrets = @{}
+$SecretsFile = "$ScriptDir\secrets.properties"
+if (Test-Path $SecretsFile) {
+    Get-Content $SecretsFile | ForEach-Object {
+        if ($_ -match "^\s*([^#=]+)\s*=\s*(.*)$") {
+            $Secrets[$matches[1].Trim()] = $matches[2].Trim()
+        }
+    }
+}
+
 $Config = @{}
 if (Test-Path $ConfigFile) {
     try {
@@ -45,7 +55,7 @@ if ([string]::IsNullOrWhiteSpace($Groups)) {
 }
 
 if ([string]::IsNullOrWhiteSpace($Testers)) {
-    $Testers = if ($Config.testers) { $Config.testers } else { $env:FIREBASE_TESTERS }
+    $Testers = if ($Secrets.FIREBASE_TESTERS) { $Secrets.FIREBASE_TESTERS } elseif ($Config.testers) { $Config.testers } else { $env:FIREBASE_TESTERS }
 }
 
 # 3. Kiem tra App ID

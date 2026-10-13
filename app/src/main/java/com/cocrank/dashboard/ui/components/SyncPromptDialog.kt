@@ -2,10 +2,7 @@ package com.cocrank.dashboard.ui.components
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
@@ -30,14 +27,10 @@ import com.cocrank.dashboard.ui.theme.GoldAccent
 @Composable
 fun SyncPromptDialog(
     initialPlayerTag: String,
-    initialApiToken: String,
-    initialProxyUrl: String,
     onDismiss: () -> Unit,
-    onConfirm: (playerTag: String, apiToken: String, proxyUrl: String) -> Unit
+    onConfirm: (playerTag: String) -> Unit
 ) {
     var playerTag by remember { mutableStateOf(initialPlayerTag) }
-    var apiToken by remember { mutableStateOf(initialApiToken) }
-    var proxyUrl by remember { mutableStateOf(initialProxyUrl) }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedContainerColor = MaterialTheme.colorScheme.surface,
@@ -53,7 +46,7 @@ fun SyncPromptDialog(
         containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
-                text = "Cấu hình Đồng bộ CoC",
+                text = "Đồng Bộ Thứ Hạng CoC",
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
                 fontSize = 18.sp
@@ -65,7 +58,7 @@ fun SyncPromptDialog(
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 Text(
-                    text = "Nhập mã Player Tag của bạn trong Clash of Clans để đồng bộ bảng đấu và điểm số cúp thực tế.",
+                    text = "Nhập mã Player Tag (#TAG) của bạn trong Clash of Clans để tự động cập nhật bảng xếp hạng và điểm cúp mùa giải thực tế.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -80,33 +73,11 @@ fun SyncPromptDialog(
                     shape = RoundedCornerShape(8.dp),
                     colors = textFieldColors
                 )
-
-                OutlinedTextField(
-                    value = apiToken,
-                    onValueChange = { apiToken = it },
-                    label = { Text("CoC API Token (Tùy chọn)") },
-                    placeholder = { Text("Bearer Token từ developer.clashofclans.com") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = textFieldColors
-                )
-
-                OutlinedTextField(
-                    value = proxyUrl,
-                    onValueChange = { proxyUrl = it },
-                    label = { Text("Proxy URL (Tùy chọn)") },
-                    placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = textFieldColors
-                )
             }
         },
         confirmButton = {
             Button(
-                onClick = { onConfirm(playerTag, apiToken, proxyUrl) },
+                onClick = { onConfirm(playerTag) },
                 colors = ButtonDefaults.buttonColors(containerColor = GoldAccent)
             ) {
                 Text("Lưu & Đồng bộ", color = Color.White, fontWeight = FontWeight.Bold)

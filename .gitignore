@@ -16,6 +16,8 @@ buildOutputCleanup/
 
 # Local configuration & Secrets
 local.properties
+secrets.properties
+app/secrets.properties
 keystore.properties
 app/keystore.properties
 *.jks

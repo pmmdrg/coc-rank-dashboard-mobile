@@ -88,18 +88,28 @@ class RankRepository(
             return Result.failure(Exception("Vui lòng nhập mã Player Tag (#TAG) để đồng bộ"))
         }
 
-        val token = userPreferences.apiToken.first()
-        val proxy = userPreferences.proxyUrl.first()
-        val service: CocApiService = NetworkModule.createService(proxy.ifBlank { null })
+        val customToken = userPreferences.apiToken.first()
+        val customProxy = userPreferences.proxyUrl.first()
+        val token = customToken.ifBlank { com.cocrank.dashboard.data.api.CocApiConfig.DEFAULT_API_TOKEN }
+        val proxy = customProxy.ifBlank { com.cocrank.dashboard.data.api.CocApiConfig.DEFAULT_PROXY_URL }
+
+        val service: CocApiService = NetworkModule.createService(proxy)
         val authHeader = if (token.isNotBlank()) "Bearer $token" else null
         val cleanTag = if (tag.startsWith("#")) tag else "#$tag"
+        val encodedTag = cleanTag.replace("#", "%23")
 
         onProgress("Đang kiểm tra thông tin người chơi $cleanTag...")
 
         return try {
-            val playerRes = service.getPlayer(cleanTag, authHeader)
+            val playerRes = service.getPlayer(encodedTag, authHeader)
             if (!playerRes.isSuccessful || playerRes.body() == null) {
-                return Result.failure(Exception("Không tìm thấy thông tin người chơi trên CoC API (Mã lỗi: ${playerRes.code()})"))
+                val msg = when (playerRes.code()) {
+                    404 -> "Không tìm thấy người chơi với mã $cleanTag trên Supercell API."
+                    403 -> "Lỗi xác thực hoặc IP bị hạn chế (Mã: 403). Vui lòng thử lại sau ít phút."
+                    502, 503, 520, 525 -> "Máy chủ CoC Proxy đang bảo trì hoặc gián đoạn. Vui lòng thử lại."
+                    else -> "Lỗi khi đồng bộ dữ liệu CoC API (Mã lỗi: ${playerRes.code()})"
+                }
+                return Result.failure(Exception(msg))
             }
             val playerData = playerRes.body()!!
             val tierName = playerData.leagueTier?.name ?: "Legend III"
@@ -111,10 +121,11 @@ class RankRepository(
 
             if (groupSummary != null && groupSummary.tag.isNotBlank() && groupSummary.seasonId != null) {
                 onProgress("Đang tải bảng đấu giải ${groupSummary.tag}...")
+                val encodedGroupTag = groupSummary.tag.replace("#", "%23")
                 val groupRes = service.getLeagueSeasonGroup(
                     leagueId = (playerData.leagueTier?.id ?: 105000034).toString(),
                     seasonId = groupSummary.seasonId,
-                    groupTag = groupSummary.tag,
+                    groupTag = encodedGroupTag,
                     authHeader = authHeader
                 )
                 if (groupRes.isSuccessful && groupRes.body() != null) {
