@@ -20,9 +20,14 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
+import com.cocrank.dashboard.domain.model.ClanData
+import com.cocrank.dashboard.domain.model.LeagueHistoryItem
+
 data class DashboardUiState(
     val season: Season? = null,
     val stats: RankingStats? = null,
+    val clanData: ClanData? = null,
+    val leagueHistory: List<LeagueHistoryItem> = emptyList(),
     val rankChanges: RankChangesSnapshot? = null,
     val previousPlayers: List<Player> = emptyList(),
     val filteredPlayers: List<Player> = emptyList(),
@@ -44,7 +49,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val userPreferences = UserPreferences(application)
     val repository = RankRepository(database, userPreferences)
 
-    private val _uiState = MutableStateFlow(DashboardUiState())
+    private val _uiState = MutableStateFlow(
+        DashboardUiState(
+            clanData = repository.getSampleClanData(),
+            leagueHistory = repository.getSampleLeagueHistory()
+        )
+    )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
     init {
@@ -175,10 +185,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     previousPlayers = prev,
                     myPlayerTag = tag
                 )
+                val myClanTag = newSeason.players.firstOrNull { it.isMe }?.clanTag
+                    ?: newSeason.players.firstOrNull { it.id == tag }?.clanTag
+
+                var syncedClan = _uiState.value.clanData
+                if (!myClanTag.isNullOrBlank()) {
+                    val clanRes = repository.getClanData(myClanTag)
+                    clanRes.onSuccess { syncedClan = it }
+                }
+
                 _uiState.update {
                     it.copy(
                         season = newSeason,
                         stats = RankingCalculator.getRankingStats(newSeason),
+                        clanData = syncedClan,
+                        leagueHistory = if (newSeason.leagueHistory.isNotEmpty()) newSeason.leagueHistory else it.leagueHistory,
                         rankChanges = changes,
                         filteredPlayers = filterPlayers(newSeason.players, it.searchQuery, it.selectedCategory),
                         isSyncing = false,
@@ -193,6 +214,27 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         syncMessage = null,
                         errorMessage = err.message ?: "Đồng bộ thất bại"
                     )
+                }
+            }
+        }
+    }
+
+    fun syncClan() {
+        val clanTag = _uiState.value.clanData?.tag
+            ?: _uiState.value.stats?.myPlayer?.clanTag
+            ?: _uiState.value.season?.players?.firstOrNull { it.isMe }?.clanTag
+        if (clanTag.isNullOrBlank()) return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isSyncing = true, syncMessage = "Đang tải dữ liệu Clan...") }
+            val res = repository.getClanData(clanTag)
+            res.onSuccess { clan ->
+                _uiState.update {
+                    it.copy(clanData = clan, isSyncing = false, syncMessage = null)
+                }
+            }.onFailure { err ->
+                _uiState.update {
+                    it.copy(isSyncing = false, syncMessage = null, errorMessage = err.message ?: "Không thể tải Clan")
                 }
             }
         }

@@ -84,6 +84,7 @@ fun PersonalScreen(
     val context = LocalContext.current
 
     var isOverviewCollapsed by remember { mutableStateOf(false) }
+    var isTrendCollapsed by remember { mutableStateOf(false) }
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { msg ->
@@ -501,6 +502,267 @@ fun PersonalScreen(
                         accentColor = Color(0xFFA855F7),
                         modifier = Modifier.weight(1f)
                     )
+                }
+            }
+
+            // Section 3: THEO DÕI PHONG ĐỘ & KỶ LỤC (Performance Trend & Records)
+            item {
+                val leagueHistory = state.leagueHistory
+                val validPlacementItems = leagueHistory.filter { it.placement > 0 }
+                val bestRankItem = validPlacementItems.minByOrNull { it.placement }
+                val bestCupsItem = leagueHistory.maxByOrNull { it.leagueTrophies }
+                val latestSeasonItem = leagueHistory.maxByOrNull { it.leagueSeasonId }
+
+                val totalWins = leagueHistory.sumOf { it.attackWins }
+                val totalAttacks = leagueHistory.sumOf { it.attackWins + it.attackLosses }
+                val overallWinRate = if (totalAttacks > 0) Math.round((totalWins.toDouble() / totalAttacks) * 1000) / 10.0 else 0.0
+
+                val bestRankVal = if (bestRankItem != null) "#${bestRankItem.placement}" else "--"
+                val bestRankDetail = if (bestRankItem != null) "${bestRankItem.tierName} • ${bestRankItem.displayPeriod}" else "Chưa có dữ liệu"
+
+                val bestCupsVal = if (bestCupsItem != null) NumberFormat.getNumberInstance(Locale.GERMANY).format(bestCupsItem.leagueTrophies) else "--"
+                val bestCupsDetail = if (bestCupsItem != null) "${bestCupsItem.tierName} • ${bestCupsItem.displayPeriod}" else "Chưa có dữ liệu"
+
+                val latestVal = if (latestSeasonItem != null) NumberFormat.getNumberInstance(Locale.GERMANY).format(latestSeasonItem.leagueTrophies) else "--"
+                val latestDetail = if (latestSeasonItem != null) "Hạng #${latestSeasonItem.placement} • ${latestSeasonItem.displayPeriod}" else "Chưa có dữ liệu"
+
+                val winRateVal = if (totalAttacks > 0) "${overallWinRate}%" else "--"
+                val winRateDetail = if (totalAttacks > 0) "$totalWins thắng / $totalAttacks trận" else "Chưa có dữ liệu"
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(14.dp)
+                ) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Tiêu đề & Nút Thu gọn / Mở rộng
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "THEO DÕI PHONG ĐỘ & KỶ LỤC",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                letterSpacing = 0.5.sp
+                            )
+
+                            val rotationAngle by animateFloatAsState(
+                                targetValue = if (isTrendCollapsed) 180f else 0f,
+                                animationSpec = tween(220),
+                                label = "trend_caret_rotation"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.75f))
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { isTrendCollapsed = !isTrendCollapsed }
+                                    .padding(horizontal = 9.dp, vertical = 4.5.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (isTrendCollapsed) "Mở rộng" else "Thu gọn",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ph_caret_up),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .graphicsLayer { rotationZ = rotationAngle }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Lưới 4 thẻ kỷ lục & Danh sách các mùa giải gần đây
+                        AnimatedVisibility(
+                            visible = !isTrendCollapsed,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                                // 4 Thẻ kỷ lục con
+                                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        PersonalOverviewCard(
+                                            label = "KỶ LỤC THỨ HẠNG",
+                                            badgeText = if (bestRankItem != null) "Tốt nhất" else null,
+                                            badgeColor = Color(0xFFA855F7),
+                                            badgeBgColor = Color(0xFFA855F7).copy(alpha = 0.14f),
+                                            value = bestRankVal,
+                                            valueColor = Color(0xFFA855F7),
+                                            detailText = bestRankDetail,
+                                            accentGradient = Brush.horizontalGradient(
+                                                listOf(Color(0xFFA855F7), Color(0xFF6366F1))
+                                            ),
+                                            watermarkIconRes = R.drawable.ph_trophy,
+                                            watermarkColor = Color(0xFFA855F7),
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        PersonalOverviewCard(
+                                            label = "KỶ LỤC CÚP",
+                                            badgeText = if (bestCupsItem != null) "Đỉnh cao" else null,
+                                            badgeColor = GoldAccent,
+                                            badgeBgColor = GoldAccent.copy(alpha = 0.14f),
+                                            value = bestCupsVal,
+                                            valueColor = GoldAccent,
+                                            detailText = bestCupsDetail,
+                                            accentGradient = Brush.horizontalGradient(
+                                                listOf(Color(0xFFFBBF24), Color(0xFFF59E0B))
+                                            ),
+                                            watermarkIconRes = R.drawable.ph_sparkle,
+                                            watermarkColor = GoldAccent,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                    ) {
+                                        PersonalOverviewCard(
+                                            label = "MÙA GẦN NHẤT",
+                                            badgeText = if (latestSeasonItem != null) "Gần đây" else null,
+                                            badgeColor = Color(0xFF38BDF8),
+                                            badgeBgColor = Color(0xFF38BDF8).copy(alpha = 0.14f),
+                                            value = latestVal,
+                                            valueColor = Color(0xFF38BDF8),
+                                            detailText = latestDetail,
+                                            accentGradient = Brush.horizontalGradient(
+                                                listOf(Color(0xFF38BDF8), Color(0xFF0284C7))
+                                            ),
+                                            watermarkIconRes = R.drawable.ph_chart_line_up,
+                                            watermarkColor = Color(0xFF38BDF8),
+                                            modifier = Modifier.weight(1f)
+                                        )
+
+                                        PersonalOverviewCard(
+                                            label = "TỶ LỆ THẮNG TỔNG",
+                                            badgeText = if (totalAttacks > 0) "Thực chiến" else null,
+                                            badgeColor = GreenSuperior,
+                                            badgeBgColor = GreenSuperior.copy(alpha = 0.14f),
+                                            value = winRateVal,
+                                            valueColor = GreenSuperior,
+                                            detailText = winRateDetail,
+                                            accentGradient = Brush.horizontalGradient(
+                                                listOf(Color(0xFF10B981), Color(0xFF059669))
+                                            ),
+                                            watermarkIconRes = R.drawable.ph_swords,
+                                            watermarkColor = GreenSuperior,
+                                            modifier = Modifier.weight(1f)
+                                        )
+                                    }
+                                }
+
+                                // Danh sách lịch sử các mùa giải
+                                if (leagueHistory.isNotEmpty()) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clip(RoundedCornerShape(12.dp))
+                                            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f))
+                                            .border(
+                                                1.dp,
+                                                MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
+                                                RoundedCornerShape(12.dp)
+                                            )
+                                            .padding(12.dp),
+                                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "LỊCH SỬ CÁC MÙA GIẢI GẦN ĐÂY",
+                                            fontSize = 11.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            letterSpacing = 0.3.sp
+                                        )
+
+                                        leagueHistory.take(4).forEach { item ->
+                                            Row(
+                                                modifier = Modifier
+                                                    .fillMaxWidth()
+                                                    .clip(RoundedCornerShape(8.dp))
+                                                    .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.7f))
+                                                    .padding(horizontal = 10.dp, vertical = 7.dp),
+                                                verticalAlignment = Alignment.CenterVertically,
+                                                horizontalArrangement = Arrangement.SpaceBetween
+                                            ) {
+                                                Column(modifier = Modifier.weight(1f)) {
+                                                    Text(
+                                                        text = item.displayPeriod,
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = MaterialTheme.colorScheme.onSurface
+                                                    )
+                                                    Text(
+                                                        text = item.tierName,
+                                                        fontSize = 10.sp,
+                                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                                    )
+                                                }
+
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    Text(
+                                                        text = "${NumberFormat.getNumberInstance(Locale.GERMANY).format(item.leagueTrophies)} 🏆",
+                                                        fontSize = 12.sp,
+                                                        fontWeight = FontWeight.Bold,
+                                                        color = GoldAccent
+                                                    )
+
+                                                    if (item.placement > 0) {
+                                                        Box(
+                                                            modifier = Modifier
+                                                                .clip(RoundedCornerShape(6.dp))
+                                                                .background(Color(0xFF38BDF8).copy(alpha = 0.15f))
+                                                                .border(1.dp, Color(0xFF38BDF8).copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+                                                                .padding(horizontal = 6.dp, vertical = 2.dp)
+                                                        ) {
+                                                            Text(
+                                                                text = "#${item.placement}",
+                                                                fontSize = 10.sp,
+                                                                fontWeight = FontWeight.Bold,
+                                                                color = Color(0xFF38BDF8)
+                                                            )
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }

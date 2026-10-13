@@ -233,6 +233,30 @@ class RankRepository(
                     ?: playerData.leagueTier?.iconUrls?.small
             )
 
+            // Lấy lịch sử mùa giải của người chơi
+            val historyItems = try {
+                val historyRes = service.getPlayerLeagueHistory(encodedTag, authHeader)
+                if (historyRes.isSuccessful && historyRes.body() != null) {
+                    historyRes.body()!!.items.map { item ->
+                        val itemTierName = RankedTierMetadata.getTierName(item.leagueTierId)
+                        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+                            leagueSeasonId = item.leagueSeasonId,
+                            leagueTrophies = item.leagueTrophies,
+                            leagueTierId = item.leagueTierId,
+                            placement = item.placement,
+                            attackWins = item.attackWins,
+                            attackLosses = item.attackLosses,
+                            defenseWins = item.defenseWins,
+                            defenseLosses = item.defenseLosses,
+                            tierName = itemTierName,
+                            displayPeriod = "Mùa #${item.leagueSeasonId}"
+                        )
+                    }
+                } else emptyList()
+            } catch (e: Exception) {
+                emptyList()
+            }
+
             val newSeason = Season(
                 league = tierName,
                 leagueIconUrl = leagueIconUrl,
@@ -247,7 +271,8 @@ class RankRepository(
                 players = members,
                 leagueGroupTag = groupTag,
                 leagueSeasonId = seasonId,
-                lastSyncedAt = syncedTime
+                lastSyncedAt = syncedTime,
+                leagueHistory = if (historyItems.isNotEmpty()) historyItems else getSampleLeagueHistory()
             )
 
             val normalized = RankingCalculator.normalizeSeason(newSeason)
@@ -281,6 +306,110 @@ class RankRepository(
         }
     }
 
+    suspend fun getClanData(clanTag: String): Result<ClanData> {
+        val res = fetchClan(clanTag)
+        return res.map { detail ->
+            val dateFormat = SimpleDateFormat("HH:mm:ss dd/MM", Locale.getDefault())
+            val members = detail.memberList.map { m ->
+                ClanMember(
+                    tag = m.tag,
+                    name = m.name,
+                    role = m.role,
+                    townHallLevel = m.townHallLevel,
+                    expLevel = m.expLevel,
+                    clanRank = m.clanRank,
+                    previousClanRank = m.previousClanRank,
+                    trophies = m.trophies,
+                    donations = m.donations,
+                    donationsReceived = m.donationsReceived,
+                    leagueIconUrl = m.leagueTier?.iconUrls?.medium ?: m.leagueTier?.iconUrls?.small
+                )
+            }
+            ClanData(
+                tag = detail.tag,
+                name = detail.name,
+                description = detail.description,
+                clanLevel = detail.clanLevel,
+                clanPoints = detail.clanPoints,
+                members = detail.members,
+                warLeagueName = detail.warLeague?.name,
+                badgeUrl = detail.badgeUrls?.large ?: detail.badgeUrls?.medium ?: detail.badgeUrls?.small,
+                memberList = members,
+                lastSyncedAt = dateFormat.format(Date())
+            )
+        }
+    }
+
+    fun getSampleLeagueHistory(): List<com.cocrank.dashboard.domain.model.LeagueHistoryItem> = listOf(
+        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+            leagueSeasonId = 202609,
+            leagueTrophies = 5820,
+            leagueTierId = 105000034,
+            placement = 14,
+            attackWins = 22,
+            attackLosses = 2,
+            defenseWins = 18,
+            defenseLosses = 6,
+            tierName = "Legend III",
+            displayPeriod = "Mùa 09/2026"
+        ),
+        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+            leagueSeasonId = 202608,
+            leagueTrophies = 5740,
+            leagueTierId = 105000034,
+            placement = 18,
+            attackWins = 20,
+            attackLosses = 4,
+            defenseWins = 16,
+            defenseLosses = 8,
+            tierName = "Legend III",
+            displayPeriod = "Mùa 08/2026"
+        ),
+        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+            leagueSeasonId = 202607,
+            leagueTrophies = 5650,
+            leagueTierId = 105000033,
+            placement = 8,
+            attackWins = 17,
+            attackLosses = 1,
+            defenseWins = 15,
+            defenseLosses = 3,
+            tierName = "Electro 33",
+            displayPeriod = "Mùa 07/2026"
+        ),
+        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+            leagueSeasonId = 202606,
+            leagueTrophies = 5490,
+            leagueTierId = 105000032,
+            placement = 12,
+            attackWins = 16,
+            attackLosses = 2,
+            defenseWins = 14,
+            defenseLosses = 4,
+            tierName = "Electro 32",
+            displayPeriod = "Mùa 06/2026"
+        )
+    )
+
+    fun getSampleClanData(): ClanData = ClanData(
+        tag = "#2Q0Y9L9G",
+        name = "Golden Stars Vietnam",
+        description = "Clan giao lưu học hỏi chiến thuật, tham gia giải đấu và War League hàng tháng. Đoàn kết và nhiệt huyết!",
+        clanLevel = 22,
+        clanPoints = 48920,
+        members = 48,
+        warLeagueName = "Champions League I",
+        badgeUrl = "https://api-assets.clashofclans.com/badges/512/q14K7yC1P54_1l1bZ13uKqD43fO9m9o3K6e6e2J6B0.png",
+        memberList = listOf(
+            ClanMember(tag = "#90UQRP0", name = "Bạn (Hero)", role = "leader", townHallLevel = 17, expLevel = 240, clanRank = 1, previousClanRank = 1, trophies = 5850, donations = 4500, donationsReceived = 1200),
+            ClanMember(tag = "#M222222", name = "Arthur Pendragon", role = "coLeader", townHallLevel = 17, expLevel = 235, clanRank = 2, previousClanRank = 2, trophies = 5720, donations = 3800, donationsReceived = 2100),
+            ClanMember(tag = "#M333333", name = "Shadow Assassin", role = "admin", townHallLevel = 16, expLevel = 210, clanRank = 3, previousClanRank = 4, trophies = 5480, donations = 2900, donationsReceived = 1800),
+            ClanMember(tag = "#M444444", name = "Valkyrie Storm", role = "member", townHallLevel = 16, expLevel = 195, clanRank = 4, previousClanRank = 3, trophies = 5320, donations = 1500, donationsReceived = 1600),
+            ClanMember(tag = "#M555555", name = "Dragon Rider", role = "member", townHallLevel = 15, expLevel = 180, clanRank = 5, previousClanRank = 5, trophies = 5150, donations = 950, donationsReceived = 1400)
+        ),
+        lastSyncedAt = "Vừa khởi tạo (Mẫu)"
+    )
+
     /**
      * Dữ liệu mẫu hoàn chỉnh khi người dùng vừa mở app
      */
@@ -307,7 +436,8 @@ class RankRepository(
             demotionCount = 1,
             myPlayerId = myTag,
             players = samplePlayers,
-            lastSyncedAt = "Vừa khởi tạo (Mẫu)"
+            lastSyncedAt = "Vừa khởi tạo (Mẫu)",
+            leagueHistory = getSampleLeagueHistory()
         )
 
         return RankingCalculator.normalizeSeason(season)

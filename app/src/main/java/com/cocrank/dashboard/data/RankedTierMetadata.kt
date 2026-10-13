@@ -92,4 +92,15 @@ object RankedTierMetadata {
             else -> 24
         }
     }
+
+    fun getTierName(tierId: Long): String {
+        val tier = TIERS.find { it.id == tierId || it.tierNumber.toLong() == tierId }
+        if (tier != null) return tier.name
+        if (tierId in 105000001L..105000036L) {
+            val num = (tierId - 105000000L).toInt()
+            val found = TIERS.find { it.tierNumber == num }
+            if (found != null) return found.name
+        }
+        return "Cấp bậc #$tierId"
+    }
 }

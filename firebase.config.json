@@ -3,5 +3,5 @@
     "projectId":  "coc-rank-mobile",
     "groups":  "",
     "testers":  "pmmdrg2605@gmail.com",
-    "releaseNotes":  "CoC Rank Mobile v1.0.8 - Chuyển huy hiệu giải đấu xuống thẻ hồ sơ người dùng, thiết kế lại 4 thẻ chỉ số tổng quan cá nhân với thanh specular gradient, watermark và nút thu gọn/mở rộng"
+    "releaseNotes":  "CoC Rank Mobile v1.0.9 - Tinh chỉnh giao diện 3 tab đồng bộ cấu trúc với bản Web: Thêm Performance Trend vào mục Cá nhân, Tách Tổng quan mùa giải & Kỷ lục nổi bật vào mục Mùa giải, Nâng cấp mục Clan với Hero Banner, bộ lọc vai trò, sắp xếp và kết nối dữ liệu thật từ API"
 }

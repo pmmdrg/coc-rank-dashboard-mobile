@@ -115,7 +115,13 @@ data class CocClanDetailResponse(
     @SerializedName("clanPoints") val clanPoints: Int = 0,
     @SerializedName("members") val members: Int = 0,
     @SerializedName("badgeUrls") val badgeUrls: CocBadgeUrls? = null,
+    @SerializedName("warLeague") val warLeague: CocWarLeague? = null,
     @SerializedName("memberList") val memberList: List<CocClanMemberItem> = emptyList()
+)
+
+data class CocWarLeague(
+    @SerializedName("id") val id: Int = 0,
+    @SerializedName("name") val name: String = ""
 )
 
 data class CocClanMemberItem(

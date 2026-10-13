@@ -100,7 +100,8 @@ data class Season(
     val defenseLogs: List<BattleLogEntry> = emptyList(),
     val leagueGroupTag: String? = null,
     val leagueSeasonId: String? = null,
-    val lastSyncedAt: String? = null
+    val lastSyncedAt: String? = null,
+    val leagueHistory: List<LeagueHistoryItem> = emptyList()
 )
 
 data class RankingStats(
@@ -160,7 +161,21 @@ data class ClanData(
     val clanLevel: Int = 0,
     val clanPoints: Int = 0,
     val members: Int = 0,
+    val warLeagueName: String? = null,
     val badgeUrl: String? = null,
     val memberList: List<ClanMember> = emptyList(),
     val lastSyncedAt: String? = null
+)
+
+data class LeagueHistoryItem(
+    val leagueSeasonId: Long = 0,
+    val leagueTrophies: Int = 0,
+    val leagueTierId: Long = 0,
+    val placement: Int = 0,
+    val attackWins: Int = 0,
+    val attackLosses: Int = 0,
+    val defenseWins: Int = 0,
+    val defenseLosses: Int = 0,
+    val tierName: String = "",
+    val displayPeriod: String = ""
 )
