@@ -198,7 +198,7 @@ fun SettingsScreen(
                 SettingsSectionCard(title = "Thông Tin Ứng Dụng") {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "CoC Rank Dashboard Mobile v1.0.3",
+                            text = "CoC Rank Dashboard Mobile v1.0.4",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )

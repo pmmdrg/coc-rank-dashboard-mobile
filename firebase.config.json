@@ -3,5 +3,5 @@
     "projectId":  "coc-rank-mobile",
     "groups":  "",
     "testers":  "",
-    "releaseNotes":  "CoC Rank Mobile v1.0.3 - Tự động tích hợp sẵn Proxy & Token API, người dùng chỉ cần nhập Player Tag (#TAG)"
+    "releaseNotes":  "CoC Rank Mobile v1.0.4 - Tự động tích hợp sẵn Proxy & Token API (Chỉ cần nhập Player Tag)"
 }
