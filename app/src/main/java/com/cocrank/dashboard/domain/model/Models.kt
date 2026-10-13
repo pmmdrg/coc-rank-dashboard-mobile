@@ -1,9 +1,9 @@
 package com.cocrank.dashboard.domain.model
 
 enum class RatingCategory(val displayName: String, val colorHex: Long) {
-    DOMINANT("Áp đảo", 0xFF8B5CF6),     // >= 70% cup tối đa ban đầu
-    SUPERIOR("Vượt trội", 0xFF10B981),  // 60% đến < 70% cup tối đa ban đầu
-    POTENTIAL("Tiềm năng", 0xFF0284C7), // 50% đến < 60% cup tối đa ban đầu
+    DOMINANT("Áp đảo", 0xFF8B5CF6),     // >= 60% cup tối đa ban đầu
+    SUPERIOR("Vượt trội", 0xFF10B981),  // 55% đến < 60% cup tối đa ban đầu
+    POTENTIAL("Tiềm năng", 0xFF0284C7), // 50% đến < 55% cup tối đa ban đầu
     ALARM("Báo động", 0xFFE11D48);      // < 50% cup tối đa ban đầu
 
     companion object {
@@ -11,8 +11,8 @@ enum class RatingCategory(val displayName: String, val colorHex: Long) {
             if (initialMaxCups <= 0) return ALARM
             val ratio = cups.toDouble() / initialMaxCups
             return when {
-                ratio >= 0.70 -> DOMINANT
-                ratio >= 0.60 -> SUPERIOR
+                ratio >= 0.60 -> DOMINANT
+                ratio >= 0.55 -> SUPERIOR
                 ratio >= 0.50 -> POTENTIAL
                 else -> ALARM
             }
