@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -53,23 +52,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.cocrank.dashboard.R
-import com.cocrank.dashboard.ui.screens.changes.RankChangesScreen
 import com.cocrank.dashboard.ui.screens.clan.ClanScreen
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardScreen
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
+import com.cocrank.dashboard.ui.screens.personal.PersonalScreen
 import com.cocrank.dashboard.ui.screens.settings.SettingsScreen
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 sealed class Screen(val route: String, val title: String, @DrawableRes val iconRes: Int) {
-    object Dashboard : Screen("dashboard", "Bảng đấu", R.drawable.ph_trophy)
-    object Changes : Screen("changes", "Biến động", R.drawable.ph_chart_line_up)
-    object Clan : Screen("clan", "Bang hội", R.drawable.ph_shield)
+    object Personal : Screen("personal", "Cá nhân", R.drawable.ph_user)
+    object Season : Screen("season", "Mùa giải", R.drawable.ph_trophy)
+    object Clan : Screen("clan", "Clan", R.drawable.ph_shield)
     object Settings : Screen("settings", "Cài đặt", R.drawable.ph_gear)
 }
 
 private fun getScreenIndex(route: String?): Int = when (route) {
-    Screen.Dashboard.route -> 0
-    Screen.Changes.route -> 1
+    Screen.Personal.route -> 0
+    Screen.Season.route -> 1
     Screen.Clan.route -> 2
     Screen.Settings.route -> 3
     else -> 0
@@ -110,52 +109,40 @@ fun AppNavigation(
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
-    val screens = listOf(
-        Screen.Dashboard,
-        Screen.Changes,
-        Screen.Clan,
-        Screen.Settings
+    val bottomScreens = listOf(
+        Screen.Personal,
+        Screen.Season,
+        Screen.Clan
     )
 
-    Scaffold(
-        bottomBar = {
-            LiquidCapsuleNavigationBar(
-                screens = screens,
-                currentRoute = currentRoute,
-                onNavigate = { screen ->
-                    if (currentRoute != screen.route) {
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                }
-            )
-        },
-        containerColor = MaterialTheme.colorScheme.background,
+    Box(
         modifier = modifier
-    ) { innerPadding ->
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+    ) {
         NavHost(
             navController = navController,
-            startDestination = Screen.Dashboard.route,
-            modifier = Modifier.padding(innerPadding)
+            startDestination = Screen.Personal.route,
+            modifier = Modifier.fillMaxSize()
         ) {
             composable(
-                route = Screen.Dashboard.route,
+                route = Screen.Personal.route,
                 enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 0) },
                 exitTransition = { createExitTransition(0, getScreenIndex(targetState.destination.route)) }
             ) {
-                DashboardScreen(viewModel = viewModel)
+                PersonalScreen(
+                    viewModel = viewModel,
+                    onOpenSettings = {
+                        navController.navigate(Screen.Settings.route)
+                    }
+                )
             }
             composable(
-                route = Screen.Changes.route,
+                route = Screen.Season.route,
                 enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 1) },
                 exitTransition = { createExitTransition(1, getScreenIndex(targetState.destination.route)) }
             ) {
-                RankChangesScreen(viewModel = viewModel)
+                DashboardScreen(viewModel = viewModel)
             }
             composable(
                 route = Screen.Clan.route,
@@ -169,8 +156,34 @@ fun AppNavigation(
                 enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 3) },
                 exitTransition = { createExitTransition(3, getScreenIndex(targetState.destination.route)) }
             ) {
-                SettingsScreen(viewModel = viewModel)
+                SettingsScreen(
+                    viewModel = viewModel,
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
+        }
+
+        // Floating Liquid Capsule Navigation Bar overlay (chỉ hiện ở 3 màn hình chính)
+        if (currentRoute != Screen.Settings.route) {
+            LiquidCapsuleNavigationBar(
+                screens = bottomScreens,
+                currentRoute = currentRoute,
+                onNavigate = { screen ->
+                    if (currentRoute != screen.route) {
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                },
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .navigationBarsPadding()
+                    .padding(bottom = 12.dp)
+            )
         }
     }
 }
@@ -182,41 +195,43 @@ fun LiquidCapsuleNavigationBar(
     onNavigate: (Screen) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val selectedIndex = screens.indexOfFirst { it.route == currentRoute }.coerceAtLeast(0)
+    val selectedIndex = screens.indexOfFirst { it.route == currentRoute }
 
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
-            .padding(horizontal = 20.dp, vertical = 12.dp),
+            .padding(horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
+                .height(58.dp)
                 .shadow(
-                    elevation = 12.dp,
-                    shape = RoundedCornerShape(32.dp),
+                    elevation = 14.dp,
+                    shape = RoundedCornerShape(29.dp),
                     spotColor = Color.Black.copy(alpha = 0.35f),
                     ambientColor = Color.Black.copy(alpha = 0.15f)
                 )
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.95f))
+                .clip(RoundedCornerShape(29.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
-                    shape = RoundedCornerShape(32.dp)
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
+                    shape = RoundedCornerShape(29.dp)
                 )
-                .padding(horizontal = 6.dp, vertical = 6.dp)
+                .padding(horizontal = 5.dp, vertical = 5.dp)
         ) {
             val totalWidth = maxWidth
             val tabCount = screens.size
             val tabWidth = totalWidth / tabCount
 
+            val targetPos = if (selectedIndex >= 0) selectedIndex.toFloat() else 0f
+            val isVisible = selectedIndex >= 0
+
             // Liquid bouncing indicator position with juicy iOS spring physics
             val animatedPosition by animateFloatAsState(
-                targetValue = selectedIndex.toFloat(),
+                targetValue = targetPos,
                 animationSpec = spring(
                     dampingRatio = 0.68f, // Elastic liquid bounce
                     stiffness = Spring.StiffnessMediumLow
@@ -225,20 +240,22 @@ fun LiquidCapsuleNavigationBar(
             )
 
             // Dynamic liquid pill indicator
-            Box(
-                modifier = Modifier
-                    .offset(x = tabWidth * animatedPosition)
-                    .width(tabWidth)
-                    .fillMaxHeight()
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
-                    .clip(RoundedCornerShape(26.dp))
-                    .background(GoldAccent.copy(alpha = 0.18f))
-                    .border(
-                        width = 1.dp,
-                        color = GoldAccent.copy(alpha = 0.4f),
-                        shape = RoundedCornerShape(26.dp)
-                    )
-            )
+            if (isVisible) {
+                Box(
+                    modifier = Modifier
+                        .offset(x = tabWidth * animatedPosition)
+                        .width(tabWidth)
+                        .fillMaxHeight()
+                        .padding(horizontal = 4.dp, vertical = 2.dp)
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(GoldAccent.copy(alpha = 0.18f))
+                        .border(
+                            width = 1.dp,
+                            color = GoldAccent.copy(alpha = 0.45f),
+                            shape = RoundedCornerShape(24.dp)
+                        )
+                )
+            }
 
             // Tab items row
             Row(
@@ -248,7 +265,7 @@ fun LiquidCapsuleNavigationBar(
                 screens.forEachIndexed { index, screen ->
                     val isSelected = selectedIndex == index
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.15f else 0.95f,
+                        targetValue = if (isSelected) 1.12f else 0.95f,
                         animationSpec = spring(
                             dampingRatio = 0.65f,
                             stiffness = Spring.StiffnessMediumLow
@@ -279,7 +296,7 @@ fun LiquidCapsuleNavigationBar(
                             contentDescription = screen.title,
                             tint = tabColor,
                             modifier = Modifier
-                                .size(22.dp)
+                                .size(20.dp)
                                 .graphicsLayer {
                                     scaleX = iconScale
                                     scaleY = iconScale

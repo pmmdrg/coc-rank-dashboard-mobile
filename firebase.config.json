@@ -3,5 +3,5 @@
     "projectId":  "coc-rank-mobile",
     "groups":  "",
     "testers":  "",
-    "releaseNotes":  "CoC Rank Mobile v1.0.5 - Công thức đánh giá phong độ theo % cúp tối đa (Áp đảo >= 70%, Vượt trội >= 60%, Tiềm năng >= 50%)"
+    "releaseNotes":  "CoC Rank Mobile v1.0.6 - Tối ưu thanh con nhộng nổi không viền đen, chuẩn hóa 3 mục chính (Cá nhân, Mùa giải, Clan) và đồng bộ API endpoint chuẩn theo web"
 }

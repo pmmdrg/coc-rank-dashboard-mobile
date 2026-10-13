@@ -1,6 +1,8 @@
 package com.cocrank.dashboard.data.repository
 
 import com.cocrank.dashboard.data.RankedTierMetadata
+import com.cocrank.dashboard.data.api.CocApiConfig
+import com.cocrank.dashboard.data.api.CocClanDetailResponse
 import com.cocrank.dashboard.data.api.CocApiService
 import com.cocrank.dashboard.data.api.NetworkModule
 import com.cocrank.dashboard.data.local.AppDatabase
@@ -115,17 +117,18 @@ class RankRepository(
             val tierName = playerData.leagueTier?.name ?: "Legend III"
             val maxAttacks = RankedTierMetadata.getMaxAttacksForLeague(tierName)
 
-            // Lấy dữ liệu bảng giải đấu (League Group) nếu có
-            val groupSummary = playerData.leagueGroup
+            // Lấy dữ liệu bảng giải đấu (League Group) chuẩn theo Supercell & RoyaleAPI Proxy
+            val groupTag = playerData.currentLeagueGroupTag ?: playerData.leagueGroup?.tag
+            val seasonId = playerData.currentLeagueSeasonId ?: playerData.leagueGroup?.seasonId
             val members = mutableListOf<Player>()
 
-            if (groupSummary != null && groupSummary.tag.isNotBlank() && groupSummary.seasonId != null) {
-                onProgress("Đang tải bảng đấu giải ${groupSummary.tag}...")
-                val encodedGroupTag = groupSummary.tag.replace("#", "%23")
-                val groupRes = service.getLeagueSeasonGroup(
-                    leagueId = (playerData.leagueTier?.id ?: 105000034).toString(),
-                    seasonId = groupSummary.seasonId,
+            if (!groupTag.isNullOrBlank() && !seasonId.isNullOrBlank()) {
+                onProgress("Đang tải bảng đấu giải $groupTag...")
+                val encodedGroupTag = groupTag.replace("#", "%23")
+                val groupRes = service.getLeagueGroup(
                     groupTag = encodedGroupTag,
+                    seasonId = seasonId,
+                    playerTag = cleanTag,
                     authHeader = authHeader
                 )
                 if (groupRes.isSuccessful && groupRes.body() != null) {
@@ -133,28 +136,32 @@ class RankRepository(
                     groupData.members.forEach { m ->
                         val totalAttacks = m.attackWinCount + m.attackLoseCount
                         val totalDefenses = m.defenseWinCount + m.defenseLoseCount
+                        val mTag = m.memberTag
+                        val mName = m.memberName
+                        val cups = m.memberCups
+                        val isMe = mTag.equals(cleanTag, ignoreCase = true)
                         members.add(
                             Player(
-                                id = m.tag,
-                                name = m.name,
-                                playerTag = m.tag,
-                                clanTag = m.clan?.tag,
-                                clanName = m.clan?.name,
+                                id = mTag,
+                                name = mName,
+                                playerTag = mTag,
+                                clanTag = m.memberClanTag,
+                                clanName = m.memberClanName,
                                 attacks = totalAttacks,
                                 defenses = totalDefenses,
-                                currentCups = m.trophies,
+                                currentCups = cups,
                                 attackWinCount = m.attackWinCount,
                                 attackLoseCount = m.attackLoseCount,
                                 defenseWinCount = m.defenseWinCount,
                                 defenseLoseCount = m.defenseLoseCount,
-                                isMe = m.tag.equals(cleanTag, ignoreCase = true)
+                                isMe = isMe
                             )
                         )
                     }
                 }
             }
 
-            // Nếu không thuộc bảng đấu cụ thể, tạo danh sách từ dữ liệu người chơi + các đối thủ giả lập tiêu biểu
+            // Nếu không thuộc bảng đấu cụ thể, tạo danh sách từ dữ liệu người chơi
             if (members.isEmpty()) {
                 members.add(
                     Player(
@@ -186,14 +193,37 @@ class RankRepository(
                 demotionCount = 1,
                 myPlayerId = cleanTag,
                 players = members,
-                leagueGroupTag = groupSummary?.tag,
-                leagueSeasonId = groupSummary?.seasonId,
+                leagueGroupTag = groupTag,
+                leagueSeasonId = seasonId,
                 lastSyncedAt = syncedTime
             )
 
             val normalized = RankingCalculator.normalizeSeason(newSeason)
             saveSeason(normalized)
             Result.success(normalized)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    suspend fun fetchClan(clanTag: String): Result<CocClanDetailResponse> {
+        val customToken = userPreferences.apiToken.first()
+        val customProxy = userPreferences.proxyUrl.first()
+        val token = customToken.ifBlank { CocApiConfig.DEFAULT_API_TOKEN }
+        val proxy = customProxy.ifBlank { CocApiConfig.DEFAULT_PROXY_URL }
+
+        val service: CocApiService = NetworkModule.createService(proxy)
+        val authHeader = if (token.isNotBlank()) "Bearer $token" else null
+        val cleanTag = if (clanTag.startsWith("#")) clanTag else "#$clanTag"
+        val encodedTag = cleanTag.replace("#", "%23")
+
+        return try {
+            val res = service.getClan(encodedTag, authHeader)
+            if (res.isSuccessful && res.body() != null) {
+                Result.success(res.body()!!)
+            } else {
+                Result.failure(Exception("Không thể tải dữ liệu clan (${res.code()})"))
+            }
         } catch (e: Exception) {
             Result.failure(e)
         }

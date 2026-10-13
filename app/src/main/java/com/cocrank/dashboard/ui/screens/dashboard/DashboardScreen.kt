@@ -1,6 +1,7 @@
 package com.cocrank.dashboard.ui.screens.dashboard
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,9 +13,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -24,7 +25,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -42,9 +42,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocrank.dashboard.R
+import com.cocrank.dashboard.domain.model.RatingCategory
 import com.cocrank.dashboard.ui.components.PlayerItemCard
 import com.cocrank.dashboard.ui.components.SearchAndFilterBar
-import com.cocrank.dashboard.ui.components.StatCard
 import com.cocrank.dashboard.ui.components.SyncPromptDialog
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
@@ -59,6 +59,8 @@ fun DashboardScreen(
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
+    val season = state.season
+    val stats = state.stats
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { msg ->
@@ -71,9 +73,7 @@ fun DashboardScreen(
         SyncPromptDialog(
             initialPlayerTag = state.savedPlayerTag,
             onDismiss = { viewModel.dismissConfigDialog() },
-            onConfirm = { tag ->
-                viewModel.savePlayerTag(tag)
-            }
+            onConfirm = { tag -> viewModel.savePlayerTag(tag) }
         )
     }
 
@@ -85,12 +85,12 @@ fun DashboardScreen(
                     Column {
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text(
-                                text = "CoC Rank",
-                                fontWeight = FontWeight.ExtraBold,
-                                fontSize = 19.sp,
-                                color = GoldAccent
+                                text = "Thông Tin Mùa Giải",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
-                            Spacer(modifier = Modifier.size(6.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
                             Box(
                                 modifier = Modifier
                                     .clip(RoundedCornerShape(4.dp))
@@ -98,7 +98,7 @@ fun DashboardScreen(
                                     .padding(horizontal = 6.dp, vertical = 2.dp)
                             ) {
                                 Text(
-                                    text = state.season?.league ?: "Legend",
+                                    text = season?.league ?: "Legend",
                                     fontSize = 11.sp,
                                     fontWeight = FontWeight.Bold,
                                     color = PurpleDominant
@@ -106,7 +106,7 @@ fun DashboardScreen(
                             }
                         }
                         Text(
-                            text = if (state.isSyncing) (state.syncMessage ?: "Đang đồng bộ...") else "Lần cuối: ${state.season?.lastSyncedAt ?: "Chưa rõ"}",
+                            text = if (state.isSyncing) (state.syncMessage ?: "Đang đồng bộ...") else "Mùa giải: ${season?.seasonName ?: "Hiện tại"}",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp
@@ -132,13 +132,6 @@ fun DashboardScreen(
                             )
                         }
                     }
-                    IconButton(onClick = { viewModel.openConfigDialog() }) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ph_gear),
-                            contentDescription = "Cấu hình",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
@@ -152,94 +145,59 @@ fun DashboardScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            // Stat Cards Grid
+            // Overview Rating Distribution Cards
             item {
-                val stats = state.stats
-                val my = stats?.myPlayer
-                val season = state.season
-
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
+                        .padding(14.dp)
                 ) {
-                    // Row 1: Current Rank & Current Cups
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "Hạng của bạn",
-                            value = if (my != null) "#${my.rank}" else "--",
-                            subtitle = if (my?.rankDiff != null && my.rankDiff != 0) {
-                                if (my.rankDiff > 0) "Tăng ${my.rankDiff} bậc" else "Hạ ${-my.rankDiff} bậc"
-                            } else "Chưa đổi",
-                            iconRes = R.drawable.ph_trophy,
-                            accentColor = GoldAccent,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Cúp hiện tại",
-                            value = if (my != null) "${my.currentCups} 🏆" else "--",
-                            subtitle = my?.rating?.displayName ?: "Chưa xếp loại",
-                            iconRes = R.drawable.ph_sparkle,
-                            accentColor = GreenSuperior,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "PHÂN BỔ PHONG ĐỘ BẢNG ĐẤU",
+                                style = MaterialTheme.typography.labelMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                letterSpacing = 0.5.sp
+                            )
+                            Text(
+                                text = "Tổng ${season?.players?.size ?: 0} người",
+                                fontSize = 11.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
 
-                    // Row 2: Max Cups & Lowest Possible Rank
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "Cúp tối đa",
-                            value = if (my != null) "${my.maxPossibleCups} 🏆" else "--",
-                            subtitle = "Giả định toàn thắng & thủ 40c",
-                            iconRes = R.drawable.ph_shield,
-                            accentColor = Color(0xFF38BDF8),
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Rank thấp nhất",
-                            value = if (stats != null && stats.lowestPossibleRank > 0) "#${stats.lowestPossibleRank}" else "--",
-                            subtitle = "Dự đoán trường hợp xấu nhất",
-                            iconRes = R.drawable.ph_trend_down,
-                            accentColor = RedAlarm,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            val dominantCount = stats?.ratingCounts?.get(RatingCategory.DOMINANT) ?: 0
+                            val superiorCount = stats?.ratingCounts?.get(RatingCategory.SUPERIOR) ?: 0
+                            val potentialCount = stats?.ratingCounts?.get(RatingCategory.POTENTIAL) ?: 0
+                            val alarmCount = stats?.ratingCounts?.get(RatingCategory.ALARM) ?: 0
 
-                    // Row 3: Pass me & Battles progress
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "Có thể vượt bạn",
-                            value = "${stats?.playersWhoCanPassMe ?: 0} người",
-                            subtitle = "${stats?.playersDefinitelyBelowMe ?: 0} chắc chắn xếp dưới",
-                            iconRes = R.drawable.ph_users,
-                            accentColor = Color(0xFFA855F7),
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Lượt đánh / thủ",
-                            value = if (my != null) "${my.attacks}/${season?.maxAttacks ?: 24}" else "--",
-                            subtitle = if (my != null) "Đã thủ: ${my.defenses}/${season?.maxDefenses ?: 24}" else "",
-                            iconRes = R.drawable.ph_swords,
-                            accentColor = Color(0xFFF97316),
-                            modifier = Modifier.weight(1f)
-                        )
+                            RatingCountPill(label = "Áp đảo", count = dominantCount, color = PurpleDominant, modifier = Modifier.weight(1f))
+                            RatingCountPill(label = "Vượt trội", count = superiorCount, color = GreenSuperior, modifier = Modifier.weight(1f))
+                            RatingCountPill(label = "Tiềm năng", count = potentialCount, color = Color(0xFF0284C7), modifier = Modifier.weight(1f))
+                            RatingCountPill(label = "Báo động", count = alarmCount, color = RedAlarm, modifier = Modifier.weight(1f))
+                        }
                     }
                 }
             }
 
+            // Search and Filter Bar
             item {
-                Spacer(modifier = Modifier.height(6.dp))
                 SearchAndFilterBar(
                     query = state.searchQuery,
                     onQueryChange = { viewModel.onSearchQueryChanged(it) },
@@ -253,12 +211,12 @@ fun DashboardScreen(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(top = 4.dp),
+                        .padding(top = 2.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
-                        text = "BẢNG XẾP HẠNG MÙA GIẢI",
+                        text = "BẢNG XẾP HẠNG CHI TIẾT",
                         style = MaterialTheme.typography.labelLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
@@ -275,10 +233,44 @@ fun DashboardScreen(
             items(state.filteredPlayers, key = { it.id }) { player ->
                 PlayerItemCard(
                     player = player,
-                    maxAttacks = state.season?.maxAttacks ?: 24,
-                    maxDefenses = state.season?.maxDefenses ?: 24
+                    maxAttacks = season?.maxAttacks ?: 24,
+                    maxDefenses = season?.maxDefenses ?: 24
                 )
             }
+        }
+    }
+}
+
+@Composable
+private fun RatingCountPill(
+    label: String,
+    count: Int,
+    color: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(10.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+            .padding(vertical = 8.dp, horizontal = 4.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text = "$count",
+                fontWeight = FontWeight.ExtraBold,
+                fontSize = 15.sp,
+                color = color
+            )
+            Spacer(modifier = Modifier.height(2.dp))
+            Text(
+                text = label,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = color.copy(alpha = 0.9f),
+                maxLines = 1
+            )
         }
     }
 }

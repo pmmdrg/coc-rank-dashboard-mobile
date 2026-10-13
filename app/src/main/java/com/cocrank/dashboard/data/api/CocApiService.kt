@@ -14,11 +14,17 @@ interface CocApiService {
         @Header("Authorization") authHeader: String? = null
     ): Response<CocPlayerResponse>
 
-    @GET("v1/leagues/{leagueId}/seasons/{seasonId}/groups/{groupTag}")
-    suspend fun getLeagueSeasonGroup(
-        @Path("leagueId", encoded = true) leagueId: String,
-        @Path("seasonId", encoded = true) seasonId: String,
+    @GET("v1/players/{playerTag}/leaguehistory")
+    suspend fun getPlayerLeagueHistory(
+        @Path("playerTag", encoded = true) playerTag: String,
+        @Header("Authorization") authHeader: String? = null
+    ): Response<CocLeagueHistoryResponse>
+
+    @GET("v1/leaguegroup/{groupTag}/{seasonId}")
+    suspend fun getLeagueGroup(
         @Path("groupTag", encoded = true) groupTag: String,
+        @Path("seasonId", encoded = true) seasonId: String,
+        @Query("playerTag") playerTag: String? = null,
         @Header("Authorization") authHeader: String? = null
     ): Response<CocLeagueGroupResponse>
 
@@ -27,10 +33,4 @@ interface CocApiService {
         @Path("clanTag", encoded = true) clanTag: String,
         @Header("Authorization") authHeader: String? = null
     ): Response<CocClanDetailResponse>
-
-    // Hỗ trợ gọi qua Proxy endpoint dạng ?path=...
-    @GET("api/coc")
-    suspend fun proxyGet(
-        @Query("path") path: String
-    ): Response<okhttp3.ResponseBody>
 }
