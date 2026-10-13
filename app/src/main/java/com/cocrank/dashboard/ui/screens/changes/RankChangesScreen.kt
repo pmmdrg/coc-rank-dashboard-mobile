@@ -50,6 +50,7 @@ import androidx.compose.ui.unit.sp
 import com.cocrank.dashboard.R
 import com.cocrank.dashboard.domain.model.RankChangeItem
 import com.cocrank.dashboard.ui.components.RankDiffBadge
+import com.cocrank.dashboard.ui.components.ShimmerSyncBanner
 import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
@@ -168,6 +169,14 @@ fun RankChangesScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 100.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // BANNER SHIMMER KHI ĐANG FETCH / ĐỒNG BỘ SUPERCELL API
+            item(key = "changes_shimmer_sync_banner") {
+                ShimmerSyncBanner(
+                    isSyncing = state.isSyncing,
+                    syncMessage = state.syncMessage
+                )
+            }
+
             // 1. THẺ NHẮC NHỞ BIẾN ĐỘNG CỦA BẢN THÂN (HERO REMINDER CARD)
             if (myChange != null) {
                 item(key = "my_reminder_card") {

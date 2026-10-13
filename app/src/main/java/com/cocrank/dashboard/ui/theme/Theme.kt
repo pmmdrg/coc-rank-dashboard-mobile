@@ -33,13 +33,13 @@ private val LightColorScheme = lightColorScheme(
     primaryContainer = Color(0xFFFEF3C7),
     onPrimaryContainer = Color(0xFF92400E),
     secondary = PurpleDominant,
-    background = Color(0xFFF8FAFC),
-    surface = Color(0xFFFFFFFF),
-    surfaceVariant = Color(0xFFF1F5F9),
-    onBackground = Color(0xFF0F172A),
-    onSurface = Color(0xFF0F172A),
-    onSurfaceVariant = Color(0xFF64748B),
-    outline = Color(0xFFE2E8F0),
+    background = LightBackground,
+    surface = LightSurface,
+    surfaceVariant = LightSurfaceVariant,
+    onBackground = LightTextPrimary,
+    onSurface = LightTextPrimary,
+    onSurfaceVariant = LightTextSecondary,
+    outline = LightBorder,
     error = RedAlarm
 )
 

@@ -69,6 +69,9 @@ import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.data.repository.RankRepository
 import com.cocrank.dashboard.domain.model.RatingCategory
 import com.cocrank.dashboard.ui.components.PlayerItemCard
+import com.cocrank.dashboard.ui.components.PlayerItemSkeletonCard
+import com.cocrank.dashboard.ui.components.SeasonOverviewSkeletonCard
+import com.cocrank.dashboard.ui.components.ShimmerSyncBanner
 import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.components.SearchAndFilterBar
 import com.cocrank.dashboard.ui.components.SyncPromptDialog
@@ -164,9 +167,55 @@ fun DashboardScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Bộ chọn Mùa giải (Current Season / Previous Season)
-            val hasMultipleSeasons = state.allSeasons.size > 1 || (state.currentSeason != null && state.previousSeason != null)
-            if (hasMultipleSeasons) {
+            // 0. BANNER SHIMMER KHI ĐANG FETCH / ĐỒNG BỘ SUPERCELL API
+            item(key = "dashboard_shimmer_sync_banner") {
+                ShimmerSyncBanner(
+                    isSyncing = state.isSyncing,
+                    syncMessage = state.syncMessage
+                )
+            }
+
+            if (season == null) {
+                if (state.isSyncing) {
+                    item(key = "skeleton_season_overview") {
+                        SeasonOverviewSkeletonCard()
+                    }
+                    items(6, key = { "skeleton_player_$it" }) {
+                        PlayerItemSkeletonCard()
+                    }
+                } else {
+                    item(key = "dashboard_empty_initial") {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .liquidGlass(shape = RoundedCornerShape(16.dp))
+                                .padding(28.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                Text(
+                                    text = "Chưa có dữ liệu bảng đấu",
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Nhấn nút Đồng bộ ở góc trên để tải dữ liệu từ Supercell API",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Bộ chọn Mùa giải (Current Season / Previous Season)
+                val hasMultipleSeasons = state.allSeasons.size > 1 || (state.currentSeason != null && state.previousSeason != null)
+                if (hasMultipleSeasons) {
                 item {
                     val activeIndex = state.activeSeasonIndex
                     Row(
@@ -772,6 +821,7 @@ fun DashboardScreen(
                 }
             }
         }
+    }
     }
 }
 

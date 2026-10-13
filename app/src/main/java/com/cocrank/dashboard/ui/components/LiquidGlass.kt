@@ -11,6 +11,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
@@ -32,12 +33,25 @@ fun Modifier.liquidGlass(
 ): Modifier {
     val baseSurface = MaterialTheme.colorScheme.surface
     val baseOutline = MaterialTheme.colorScheme.outline
+    val isLight = baseSurface.luminance() > 0.5f
+
+    val effectiveElevation = if (isLight) (elevation * 0.5f).coerceAtLeast(2.dp) else elevation
+    val effectiveSpotColor = if (isLight) Color(0x140F172A) else spotColor
+    val effectiveAmbientColor = if (isLight) Color(0x0C0F172A) else ambientColor
 
     val borderBrush = if (accentBorder != null) {
         Brush.verticalGradient(
             listOf(
                 accentBorder.copy(alpha = 0.85f),
                 accentBorder.copy(alpha = 0.35f)
+            )
+        )
+    } else if (isLight) {
+        Brush.verticalGradient(
+            listOf(
+                baseOutline.copy(alpha = 0.70f),
+                baseOutline.copy(alpha = 0.40f),
+                baseOutline.copy(alpha = 0.20f)
             )
         )
     } else {
@@ -50,19 +64,22 @@ fun Modifier.liquidGlass(
         )
     }
 
+    val startAlpha = if (isLight) 0.88f else surfaceAlphaStart
+    val endAlpha = if (isLight) 0.94f else surfaceAlphaEnd
+
     return this
         .shadow(
-            elevation = elevation,
+            elevation = effectiveElevation,
             shape = shape,
-            spotColor = spotColor,
-            ambientColor = ambientColor
+            spotColor = effectiveSpotColor,
+            ambientColor = effectiveAmbientColor
         )
         .clip(shape)
         .background(
             brush = Brush.verticalGradient(
                 listOf(
-                    baseSurface.copy(alpha = surfaceAlphaStart),
-                    baseSurface.copy(alpha = surfaceAlphaEnd)
+                    baseSurface.copy(alpha = startAlpha),
+                    baseSurface.copy(alpha = endAlpha)
                 )
             )
         )

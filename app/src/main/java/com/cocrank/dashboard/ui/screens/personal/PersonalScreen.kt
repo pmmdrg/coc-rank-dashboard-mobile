@@ -62,6 +62,7 @@ import com.cocrank.dashboard.R
 import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.domain.usecase.RankingCalculator
 import com.cocrank.dashboard.ui.components.RatingBadge
+import com.cocrank.dashboard.ui.components.ShimmerSyncBanner
 import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
@@ -157,6 +158,14 @@ fun PersonalScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // BANNER SHIMMER KHI ĐANG FETCH / ĐỒNG BỘ SUPERCELL API
+            item(key = "personal_shimmer_sync_banner") {
+                ShimmerSyncBanner(
+                    isSyncing = state.isSyncing,
+                    syncMessage = state.syncMessage
+                )
+            }
+
             // Hero Player Profile Banner (Chuyển thông tin League xuống thẻ thông tin người dùng)
             item {
                 val leagueIconUrl = LeagueIcons.getLeagueIconUrl(season?.league, season?.leagueIconUrl)
