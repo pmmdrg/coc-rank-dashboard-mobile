@@ -1,7 +1,15 @@
 package com.cocrank.dashboard.ui.screens.personal
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -10,6 +18,8 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -30,15 +40,20 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -51,6 +66,8 @@ import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
 import com.cocrank.dashboard.ui.theme.RedAlarm
+import java.text.NumberFormat
+import java.util.Locale
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -66,6 +83,8 @@ fun PersonalScreen(
     val season = state.season
     val context = LocalContext.current
 
+    var isOverviewCollapsed by remember { mutableStateOf(false) }
+
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
@@ -79,30 +98,12 @@ fun PersonalScreen(
             TopAppBar(
                 title = {
                     Column {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text(
-                                text = "Thông Tin Cá Nhân",
-                                fontWeight = FontWeight.Bold,
-                                fontSize = 18.sp,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            if (season != null) {
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(GoldAccent.copy(alpha = 0.15f))
-                                        .padding(horizontal = 6.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = season.league,
-                                        fontSize = 11.sp,
-                                        fontWeight = FontWeight.Bold,
-                                        color = GoldAccent
-                                    )
-                                }
-                            }
-                        }
+                        Text(
+                            text = "Thông Tin Cá Nhân",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 18.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         Text(
                             text = if (state.isSyncing) (state.syncMessage ?: "Đang đồng bộ...") else "Đồng bộ lúc: ${season?.lastSyncedAt ?: "Chưa rõ"}",
                             style = MaterialTheme.typography.bodySmall,
@@ -153,7 +154,7 @@ fun PersonalScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
-            // Hero Player Profile Banner
+            // Hero Player Profile Banner (Chuyển thông tin League xuống thẻ thông tin người dùng)
             item {
                 val leagueIconUrl = LeagueIcons.getLeagueIconUrl(season?.league, season?.leagueIconUrl)
 
@@ -175,14 +176,17 @@ fun PersonalScreen(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                // League Badge Icon (thay cho avatar placeholder)
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                modifier = Modifier.weight(1f, fill = false)
+                            ) {
+                                // League Badge Icon (Huy hiệu giải đấu)
                                 Box(
                                     modifier = Modifier
-                                        .size(48.dp)
-                                        .clip(RoundedCornerShape(12.dp))
+                                        .size(52.dp)
+                                        .clip(RoundedCornerShape(14.dp))
                                         .background(GoldAccent.copy(alpha = 0.12f))
-                                        .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
+                                        .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     AsyncImage(
@@ -193,18 +197,41 @@ fun PersonalScreen(
                                             .placeholder(R.drawable.ph_trophy)
                                             .build(),
                                         contentDescription = season?.league ?: "Huy hiệu giải đấu",
-                                        modifier = Modifier.size(38.dp),
+                                        modifier = Modifier.size(40.dp),
                                         contentScale = ContentScale.Fit
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Column {
-                                    Text(
-                                        text = my?.name ?: "Tài khoản của bạn",
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 17.sp,
-                                        color = MaterialTheme.colorScheme.onSurface
-                                    )
+                                    Row(
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                    ) {
+                                        Text(
+                                            text = my?.name ?: "Tài khoản của bạn",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 17.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        // Huy hiệu League Tier chuyển xuống đây
+                                        if (season != null && season.league.isNotBlank() && season.league != "--") {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(6.dp))
+                                                    .background(GoldAccent.copy(alpha = 0.15f))
+                                                    .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(6.dp))
+                                                    .padding(horizontal = 6.dp, vertical = 2.dp)
+                                            ) {
+                                                Text(
+                                                    text = season.league,
+                                                    fontSize = 11.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = GoldAccent
+                                                )
+                                            }
+                                        }
+                                    }
+                                    Spacer(modifier = Modifier.height(2.dp))
                                     Text(
                                         text = my?.playerTag ?: state.savedPlayerTag.ifBlank { "#Chưa cài tag" },
                                         fontSize = 12.sp,
@@ -246,89 +273,212 @@ fun PersonalScreen(
                 }
             }
 
-            // Section 1: Thẻ chỉ số thành tích
+            // Section 1: CHỈ SỐ TỔNG QUAN CÁ NHÂN (Thiết kế chuẩn hóa theo dashboard web)
             item {
-                Text(
-                    text = "CHỈ SỐ THÀNH TÍCH",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.5.sp,
-                    modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
-                )
-
                 val hasTournamentGroup = (season?.players?.size ?: 0) > 1
+                val totalPlayers = season?.players?.size ?: 0
+                val myRankPercentage = if (my != null && my.rank > 0 && hasTournamentGroup && totalPlayers > 0) {
+                    Math.round((my.rank.toDouble() / totalPlayers) * 100)
+                } else null
+
+                val myName = my?.name ?: "Bạn"
+                val myCupsFormatted = NumberFormat.getNumberInstance(Locale.GERMANY).format(my?.currentCups ?: 0)
+                val maxCupsFormatted = NumberFormat.getNumberInstance(Locale.GERMANY).format(my?.maxPossibleCups ?: 0)
+
+                // Dữ liệu Card 1: Thứ hạng hiện tại
                 val isRankValid = my != null && my.rank > 0 && hasTournamentGroup
-                val currentRankValue = if (isRankValid) "#${my!!.rank}" else "--"
-                val currentRankSubtitle = if (!hasTournamentGroup) {
-                    "Chưa vào bảng đấu"
-                } else if (my?.rankDiff != null && my.rankDiff != 0) {
-                    if (my.rankDiff > 0) "Tăng ${my.rankDiff} bậc" else "Hạ ${-my.rankDiff} bậc"
-                } else {
-                    "Chưa đổi hạng"
-                }
+                val rankValue = if (isRankValid) "#${my!!.rank}" else "--"
+                val rankBadge = if (myRankPercentage != null) "Top $myRankPercentage%" else null
+                val rankDetail = if (my != null) "$myName • $myCupsFormatted cúp" else "Chưa có dữ liệu"
 
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                // Dữ liệu Card 2: Đối thủ có thể vượt
+                val canPassCount = stats?.playersWhoCanPassMe ?: 0
+                val threatBadge = if (hasTournamentGroup) {
+                    if (canPassCount == 0) "An toàn" else "$canPassCount nguy cơ"
+                } else null
+                val threatColor = if (canPassCount == 0) Color(0xFF10B981) else Color(0xFFF97316)
+                val threatValue = if (hasTournamentGroup) "$canPassCount" else "--"
+                val threatDetail = if (my != null) "Trần cup của $myName: $maxCupsFormatted" else "Chưa có dữ liệu"
+
+                // Dữ liệu Card 3: Tấn công
+                val myAtkCount = my?.attacks ?: 0
+                val myAtkDest = my?.attackDestruction ?: 0.0
+                val atkStars = my?.attackAvgStars ?: if (myAtkCount > 0 && myAtkDest > 0.0) {
+                    if (myAtkDest >= 100) 3.0 else if (myAtkDest >= 70) 2.5 else if (myAtkDest >= 50) 2.0 else 1.0
+                } else null
+                val atkBadge = if (atkStars != null && atkStars > 0) "★ ${"%.1f".format(atkStars)}/trận" else null
+                val atkValue = if (myAtkCount > 0 || myAtkDest > 0.0) "${"%.1f".format(myAtkDest)}%" else "--"
+                val atkDetail = if (my != null) "$myAtkCount trận công" else "Chưa có dữ liệu"
+
+                // Dữ liệu Card 4: Phòng thủ
+                val myDefCount = my?.defenses ?: 0
+                val myDefDest = my?.defenseDestruction ?: 0.0
+                val defStars = my?.defenseAvgStars ?: if (myDefCount > 0 && myDefDest > 0.0) {
+                    if (myDefDest >= 100) 3.0 else if (myDefDest >= 70) 2.5 else if (myDefDest >= 50) 2.0 else 1.0
+                } else null
+                val defBadge = if (defStars != null && defStars > 0) "★ ${"%.1f".format(defStars)}/trận" else null
+                val defValue = if (myDefCount > 0 || myDefDest > 0.0) "${"%.1f".format(myDefDest)}%" else "--"
+                val defDetail = if (my != null) "$myDefCount trận thủ" else "Chưa có dữ liệu"
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .padding(14.dp)
                 ) {
-                    // Row 1: Hạng & Cúp hiện tại
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "Hạng hiện tại",
-                            value = currentRankValue,
-                            subtitle = currentRankSubtitle,
-                            iconRes = R.drawable.ph_trophy,
-                            accentColor = GoldAccent,
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Cúp hiện tại",
-                            value = if (my != null) "${my.currentCups} 🏆" else "--",
-                            subtitle = my?.rating?.displayName ?: "Chưa xếp loại",
-                            iconRes = R.drawable.ph_sparkle,
-                            accentColor = GreenSuperior,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                        // Tiêu đề & Nút Thu gọn / Mở rộng
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "CHỈ SỐ TỔNG QUAN CÁ NHÂN",
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                letterSpacing = 0.5.sp
+                            )
 
-                    // Row 2: Trần cúp & Rank thấp nhất
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        StatCard(
-                            title = "Trần cúp tối đa",
-                            value = if (my != null) "${my.maxPossibleCups} 🏆" else "--",
-                            subtitle = "Kịch bản thắng hoàn hảo",
-                            iconRes = R.drawable.ph_shield,
-                            accentColor = Color(0xFF38BDF8),
-                            modifier = Modifier.weight(1f)
-                        )
-                        StatCard(
-                            title = "Rank thấp nhất",
-                            value = if (stats != null && stats.lowestPossibleRank > 0 && hasTournamentGroup) "#${stats.lowestPossibleRank}" else "--",
-                            subtitle = if (!hasTournamentGroup) "Chưa vào bảng đấu" else "Kịch bản xấu nhất",
-                            iconRes = R.drawable.ph_trend_down,
-                            accentColor = RedAlarm,
-                            modifier = Modifier.weight(1f)
-                        )
+                            val rotationAngle by animateFloatAsState(
+                                targetValue = if (isOverviewCollapsed) 180f else 0f,
+                                animationSpec = tween(220),
+                                label = "caret_rotation"
+                            )
+
+                            Box(
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(MaterialTheme.colorScheme.background.copy(alpha = 0.75f))
+                                    .border(
+                                        1.dp,
+                                        MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                                        RoundedCornerShape(8.dp)
+                                    )
+                                    .clickable { isOverviewCollapsed = !isOverviewCollapsed }
+                                    .padding(horizontal = 9.dp, vertical = 4.5.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        text = if (isOverviewCollapsed) "Mở rộng" else "Thu gọn",
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                    Icon(
+                                        painter = painterResource(id = R.drawable.ph_caret_up),
+                                        contentDescription = null,
+                                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier
+                                            .size(12.dp)
+                                            .graphicsLayer { rotationZ = rotationAngle }
+                                    )
+                                }
+                            }
+                        }
+
+                        // Lưới 4 thẻ con (2 hàng x 2 cột)
+                        AnimatedVisibility(
+                            visible = !isOverviewCollapsed,
+                            enter = fadeIn() + expandVertically(),
+                            exit = fadeOut() + shrinkVertically()
+                        ) {
+                            Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                                // Hàng 1: Thứ hạng hiện tại & Đối thủ có thể vượt
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    PersonalOverviewCard(
+                                        label = "THỨ HẠNG HIỆN TẠI",
+                                        badgeText = rankBadge,
+                                        badgeColor = Color(0xFF38BDF8),
+                                        badgeBgColor = Color(0xFF38BDF8).copy(alpha = 0.14f),
+                                        value = rankValue,
+                                        valueColor = Color(0xFF38BDF8),
+                                        detailText = rankDetail,
+                                        accentGradient = Brush.horizontalGradient(
+                                            listOf(Color(0xFF38BDF8), Color(0xFF6366F1))
+                                        ),
+                                        watermarkIconRes = R.drawable.ph_trophy,
+                                        watermarkColor = Color(0xFF38BDF8),
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    PersonalOverviewCard(
+                                        label = "ĐỐI THỦ CÓ THỂ VƯỢT",
+                                        badgeText = threatBadge,
+                                        badgeColor = threatColor,
+                                        badgeBgColor = threatColor.copy(alpha = 0.14f),
+                                        value = threatValue,
+                                        valueColor = threatColor,
+                                        detailText = threatDetail,
+                                        accentGradient = Brush.horizontalGradient(
+                                            if (canPassCount == 0) listOf(Color(0xFF10B981), Color(0xFF06B6D4))
+                                            else listOf(Color(0xFFF97316), Color(0xFFEF4444))
+                                        ),
+                                        watermarkIconRes = R.drawable.ph_shield,
+                                        watermarkColor = threatColor,
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+
+                                // Hàng 2: Tấn công & Phòng thủ
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                                ) {
+                                    PersonalOverviewCard(
+                                        label = "TẤN CÔNG",
+                                        badgeText = atkBadge,
+                                        badgeColor = Color(0xFFFBBF24),
+                                        badgeBgColor = Color(0xFFFBBF24).copy(alpha = 0.14f),
+                                        value = atkValue,
+                                        valueColor = Color(0xFFFBBF24),
+                                        detailText = atkDetail,
+                                        accentGradient = Brush.horizontalGradient(
+                                            listOf(Color(0xFFFBBF24), Color(0xFFF97316))
+                                        ),
+                                        watermarkIconRes = R.drawable.ph_swords,
+                                        watermarkColor = Color(0xFFFBBF24),
+                                        modifier = Modifier.weight(1f)
+                                    )
+
+                                    PersonalOverviewCard(
+                                        label = "PHÒNG THỦ",
+                                        badgeText = defBadge,
+                                        badgeColor = Color(0xFF10B981),
+                                        badgeBgColor = Color(0xFF10B981).copy(alpha = 0.14f),
+                                        value = defValue,
+                                        valueColor = Color(0xFF10B981),
+                                        detailText = defDetail,
+                                        accentGradient = Brush.horizontalGradient(
+                                            listOf(Color(0xFF14B8A6), Color(0xFF10B981))
+                                        ),
+                                        watermarkIconRes = R.drawable.ph_shield,
+                                        watermarkColor = Color(0xFF10B981),
+                                        modifier = Modifier.weight(1f)
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
             }
 
-            // Section 2: Hiệu suất & Đối thủ
+            // Section 2: Kịch bản phân bổ thứ hạng
             item {
-                Text(
-                    text = "HIỆU SUẤT & ĐỐI THỦ",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.5.sp,
-                    modifier = Modifier.padding(start = 2.dp, top = 6.dp, bottom = 2.dp)
-                )
-
                 val hasTournamentGroup = (season?.players?.size ?: 0) > 1
 
                 Row(
@@ -336,23 +486,135 @@ fun PersonalScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     StatCard(
-                        title = "Đối thủ có thể vượt",
-                        value = if (hasTournamentGroup) "${stats?.playersWhoCanPassMe ?: 0} người" else "--",
-                        subtitle = if (hasTournamentGroup) "${stats?.playersDefinitelyBelowMe ?: 0} chắc chắn xếp dưới" else "Chưa có bảng đấu",
+                        title = "Rank thấp nhất",
+                        value = if (stats != null && stats.lowestPossibleRank > 0 && hasTournamentGroup) "#${stats.lowestPossibleRank}" else "--",
+                        subtitle = if (!hasTournamentGroup) "Chưa vào bảng đấu" else "Kịch bản xấu nhất",
+                        iconRes = R.drawable.ph_trend_down,
+                        accentColor = RedAlarm,
+                        modifier = Modifier.weight(1f)
+                    )
+                    StatCard(
+                        title = "Chắc chắn xếp dưới",
+                        value = if (hasTournamentGroup) "${stats?.playersDefinitelyBelowMe ?: 0} người" else "--",
+                        subtitle = if (hasTournamentGroup) "Không thể bị vượt" else "Chưa có bảng đấu",
                         iconRes = R.drawable.ph_users,
                         accentColor = Color(0xFFA855F7),
                         modifier = Modifier.weight(1f)
                     )
-                    StatCard(
-                        title = "Tiến độ lượt đấu",
-                        value = if (my != null) "${my.attacks}/${season?.maxAttacks ?: 24} công" else "--",
-                        subtitle = if (my != null) "Đã thủ: ${my.defenses}/${season?.maxDefenses ?: 24} trận" else "",
-                        iconRes = R.drawable.ph_swords,
-                        accentColor = Color(0xFFF97316),
-                        modifier = Modifier.weight(1f)
-                    )
                 }
             }
+        }
+    }
+}
+
+/**
+ * Thẻ chỉ số tổng quan con mang thiết kế Apple Specular Bar, số lớn font đậm và biểu tượng chìm
+ */
+@Composable
+private fun PersonalOverviewCard(
+    label: String,
+    badgeText: String?,
+    badgeColor: Color,
+    badgeBgColor: Color,
+    value: String,
+    valueColor: Color,
+    detailText: String,
+    accentGradient: Brush,
+    watermarkIconRes: Int,
+    watermarkColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Box(
+        modifier = modifier
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.background.copy(alpha = 0.5f))
+            .border(
+                width = 1.dp,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.65f),
+                shape = RoundedCornerShape(12.dp)
+            )
+    ) {
+        // Specular Top Accent Line
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(3.5.dp)
+                .background(accentGradient)
+        )
+
+        // Watermark Icon ở góc dưới bên phải
+        Icon(
+            painter = painterResource(id = watermarkIconRes),
+            contentDescription = null,
+            tint = watermarkColor.copy(alpha = 0.08f),
+            modifier = Modifier
+                .size(68.dp)
+                .align(Alignment.BottomEnd)
+                .offset(x = 10.dp, y = 10.dp)
+        )
+
+        // Nội dung thẻ
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 12.dp, vertical = 12.dp)
+        ) {
+            // Hàng nhãn tiêu đề + Badge
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = label,
+                    fontSize = 9.5.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    letterSpacing = 0.3.sp,
+                    maxLines = 1,
+                    modifier = Modifier.weight(1f, fill = false)
+                )
+                if (!badgeText.isNullOrBlank()) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(badgeBgColor)
+                            .border(1.dp, badgeColor.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                            .padding(horizontal = 5.dp, vertical = 1.5.dp)
+                    ) {
+                        Text(
+                            text = badgeText,
+                            fontSize = 8.5.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = badgeColor,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(7.dp))
+
+            // Giá trị chính
+            Text(
+                text = value,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.ExtraBold,
+                color = valueColor,
+                lineHeight = 26.sp
+            )
+
+            Spacer(modifier = Modifier.height(4.dp))
+
+            // Chi tiết phụ bên dưới
+            Text(
+                text = detailText,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
         }
     }
 }

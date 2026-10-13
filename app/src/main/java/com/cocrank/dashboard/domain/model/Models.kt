@@ -79,6 +79,8 @@ data class Player(
     val attackLoseCount: Int? = null,
     val defenseWinCount: Int? = null,
     val defenseLoseCount: Int? = null,
+    val attackAvgStars: Double? = null,
+    val defenseAvgStars: Double? = null,
     val isMe: Boolean = false
 )
 
@@ -94,6 +96,8 @@ data class Season(
     val demotionCount: Int = 1,
     val myPlayerId: String = "",
     val players: List<Player> = emptyList(),
+    val attackLogs: List<BattleLogEntry> = emptyList(),
+    val defenseLogs: List<BattleLogEntry> = emptyList(),
     val leagueGroupTag: String? = null,
     val leagueSeasonId: String? = null,
     val lastSyncedAt: String? = null

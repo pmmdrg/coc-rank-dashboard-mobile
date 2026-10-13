@@ -134,6 +134,44 @@ class RankRepository(
                 if (groupRes.isSuccessful && groupRes.body() != null) {
                     val groupData = groupRes.body()!!
                     val cleanTargetTag = cleanTag.trim().uppercase().removePrefix("#")
+
+                    val attackBattleLogs = groupData.attackLogs.map {
+                        com.cocrank.dashboard.domain.model.BattleLogEntry(
+                            opponentPlayerTag = it.opponentPlayerTag,
+                            opponentName = it.opponentName,
+                            stars = it.stars,
+                            destructionPercentage = it.destructionPercentage,
+                            trophies = it.trophies,
+                            creationTime = it.creationTime
+                        )
+                    }
+                    val defenseBattleLogs = groupData.defenseLogs.map {
+                        com.cocrank.dashboard.domain.model.BattleLogEntry(
+                            opponentPlayerTag = it.opponentPlayerTag,
+                            opponentName = it.opponentName,
+                            stars = it.stars,
+                            destructionPercentage = it.destructionPercentage,
+                            trophies = it.trophies,
+                            creationTime = it.creationTime
+                        )
+                    }
+
+                    val myAtkDest = if (attackBattleLogs.isNotEmpty()) {
+                        Math.round(attackBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+                    } else 0.0
+
+                    val myAtkStars = if (attackBattleLogs.isNotEmpty()) {
+                        Math.round(attackBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
+                    } else 0.0
+
+                    val myDefDest = if (defenseBattleLogs.isNotEmpty()) {
+                        Math.round(defenseBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+                    } else 0.0
+
+                    val myDefStars = if (defenseBattleLogs.isNotEmpty()) {
+                        Math.round(defenseBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
+                    } else 0.0
+
                     groupData.members.forEachIndexed { index, m ->
                         val totalAttacks = m.attackWinCount + m.attackLoseCount
                         val totalDefenses = m.defenseWinCount + m.defenseLoseCount
@@ -157,6 +195,10 @@ class RankRepository(
                                 attackLoseCount = m.attackLoseCount,
                                 defenseWinCount = m.defenseWinCount,
                                 defenseLoseCount = m.defenseLoseCount,
+                                attackDestruction = if (isMe) myAtkDest else 0.0,
+                                defenseDestruction = if (isMe) myDefDest else 0.0,
+                                attackAvgStars = if (isMe && myAtkStars > 0) myAtkStars else null,
+                                defenseAvgStars = if (isMe && myDefStars > 0) myDefStars else null,
                                 isMe = isMe
                             )
                         )
@@ -247,7 +289,7 @@ class RankRepository(
         val samplePlayers = listOf(
             Player(id = "p-1", name = "Chief Arthur", currentCups = 1420, attacks = 24, defenses = 22, playerTag = "#P111111", clanName = "Vietnam Legends", rating = RatingCategory.DOMINANT),
             Player(id = "p-2", name = "Dragon Slayer", currentCups = 1240, attacks = 22, defenses = 20, playerTag = "#P222222", clanName = "Elite Warriors", rating = RatingCategory.SUPERIOR),
-            Player(id = myTag, name = "Bạn (Hero)", currentCups = 1200, attacks = 18, defenses = 16, playerTag = myTag, clanName = "Golden Stars", isMe = true, rating = RatingCategory.SUPERIOR),
+            Player(id = myTag, name = "Bạn (Hero)", currentCups = 1200, attacks = 18, defenses = 16, attackDestruction = 99.5, defenseDestruction = 92.2, attackAvgStars = 2.8, defenseAvgStars = 2.7, playerTag = myTag, clanName = "Golden Stars", isMe = true, rating = RatingCategory.SUPERIOR),
             Player(id = "p-4", name = "Ghost Hunter", currentCups = 1160, attacks = 20, defenses = 24, playerTag = "#P444444", clanName = "Saigon Club", rating = RatingCategory.SUPERIOR),
             Player(id = "p-5", name = "Dark Knight", currentCups = 1040, attacks = 14, defenses = 12, playerTag = "#P555555", clanName = "Hanoi Clan", rating = RatingCategory.POTENTIAL),
             Player(id = "p-6", name = "Valkyrie Queen", currentCups = 980, attacks = 15, defenses = 18, playerTag = "#P666666", clanName = "Thunderbolt", rating = RatingCategory.POTENTIAL),

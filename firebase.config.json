@@ -3,5 +3,5 @@
     "projectId":  "coc-rank-mobile",
     "groups":  "",
     "testers":  "pmmdrg2605@gmail.com",
-    "releaseNotes":  "CoC Rank Mobile v1.0.7 - Thay avatar bằng huy hiệu giải đấu thực tế, loại bỏ cài đặt thừa trên trang cá nhân, sửa hiển thị thứ hạng chính xác và mở rộng khoảng đệm highlight của thanh điều hướng con nhộng"
+    "releaseNotes":  "CoC Rank Mobile v1.0.8 - Chuyển huy hiệu giải đấu xuống thẻ hồ sơ người dùng, thiết kế lại 4 thẻ chỉ số tổng quan cá nhân với thanh specular gradient, watermark và nút thu gọn/mở rộng"
 }
