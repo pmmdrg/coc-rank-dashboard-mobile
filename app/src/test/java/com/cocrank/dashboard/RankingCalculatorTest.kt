@@ -166,4 +166,56 @@ class RankingCalculatorTest {
         assertEquals(2700, bestCups?.leagueTrophies)
         assertEquals("Legend III", bestCups?.tierName)
     }
+
+    @Test
+    fun testCalculateRankChanges() {
+        val oldPlayers = listOf(
+            Player(id = "me", name = "Me", rank = 18, currentCups = 1200, attacks = 10, defenses = 10, isMe = true),
+            Player(id = "active", name = "Active Opponent", rank = 5, currentCups = 1400, attacks = 12, defenses = 12),
+            Player(id = "passive", name = "Passive Opponent", rank = 6, currentCups = 1350, attacks = 10, defenses = 10),
+            Player(id = "unchanged", name = "Unchanged Opponent", rank = 20, currentCups = 1100, attacks = 8, defenses = 8)
+        )
+
+        // New season:
+        // - "me": same cups and attacks, rank holds at 18
+        // - "active": attacked, gained cups (1480), rose to rank 4
+        // - "passive": no attacks or cup changes, but got pushed down to rank 7 because someone passed them
+        // - "unchanged": unchanged rank 20
+        val newPlayers = listOf(
+            Player(id = "active", name = "Active Opponent", rank = 4, currentCups = 1480, attacks = 13, defenses = 12),
+            Player(id = "passive", name = "Passive Opponent", rank = 7, currentCups = 1350, attacks = 10, defenses = 10),
+            Player(id = "me", name = "Me", rank = 18, currentCups = 1200, attacks = 10, defenses = 10, isMe = true),
+            Player(id = "unchanged", name = "Unchanged Opponent", rank = 20, currentCups = 1100, attacks = 8, defenses = 8)
+        )
+        val currentSeason = Season(
+            league = "Legend 3",
+            myPlayerId = "me",
+            players = newPlayers
+        )
+
+        val snapshot = RankingCalculator.calculateRankChanges(
+            currentSeason = currentSeason,
+            previousPlayers = oldPlayers,
+            myPlayerTag = "me"
+        )
+
+        val changes = snapshot.changes
+        // Should contain "me" (always tracked for hero card) and "active" (active change)
+        // Should NOT contain "passive" (passively pushed down) or "unchanged"
+        assertEquals(2, changes.size)
+
+        val myChange = changes.firstOrNull { it.isMe }
+        assertTrue(myChange != null)
+        assertEquals(18, myChange?.oldRank)
+        assertEquals(18, myChange?.newRank)
+        assertEquals(0, myChange?.rankDiff)
+
+        val activeChange = changes.firstOrNull { it.id == "active" }
+        assertTrue(activeChange != null)
+        assertEquals(5, activeChange?.oldRank)
+        assertEquals(4, activeChange?.newRank)
+        assertEquals(1, activeChange?.rankDiff)
+        assertEquals(80, activeChange?.cupsDiff)
+    }
 }
+

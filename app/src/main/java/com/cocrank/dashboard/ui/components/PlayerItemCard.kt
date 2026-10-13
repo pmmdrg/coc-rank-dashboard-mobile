@@ -133,57 +133,6 @@ fun PlayerItemCard(
                             )
                         }
                     }
-
-                    // Badges Đối Đầu từ Battle Log (So với bản thân)
-                    if (!isMe && (player.attackedByMe.isNotEmpty() || player.defendedAgainstMe.isNotEmpty())) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        FlowRow(
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalArrangement = Arrangement.spacedBy(3.dp),
-                            modifier = Modifier.fillMaxWidth()
-                        ) {
-                            if (player.attackedByMe.isNotEmpty()) {
-                                val atkSummary = player.attackedByMe.joinToString(", ") { log ->
-                                    val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
-                                    "${log.stars}★$dest"
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color(0xFF10B981).copy(alpha = 0.15f))
-                                        .border(0.5.dp, Color(0xFF10B981).copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "⚔️ Bạn công: $atkSummary",
-                                        color = Color(0xFF10B981),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                            if (player.defendedAgainstMe.isNotEmpty()) {
-                                val defSummary = player.defendedAgainstMe.joinToString(", ") { log ->
-                                    val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
-                                    "${log.stars}★$dest"
-                                }
-                                Box(
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(4.dp))
-                                        .background(Color(0xFFF59E0B).copy(alpha = 0.15f))
-                                        .border(0.5.dp, Color(0xFFF59E0B).copy(alpha = 0.4f), RoundedCornerShape(4.dp))
-                                        .padding(horizontal = 5.dp, vertical = 2.dp)
-                                ) {
-                                    Text(
-                                        text = "🛡️ Bị đánh: $defSummary",
-                                        color = Color(0xFFF59E0B),
-                                        fontSize = 10.sp,
-                                        fontWeight = FontWeight.SemiBold
-                                    )
-                                }
-                            }
-                        }
-                    }
                 }
 
                 // Rank Change & Rating
@@ -193,6 +142,70 @@ fun PlayerItemCard(
                 ) {
                     RatingBadge(category = player.rating)
                     RankDiffBadge(diff = player.rankDiff)
+                }
+            }
+
+            // Badges Đối Đầu từ Battle Log (So với bản thân): Chung 1 hàng, mỗi cái 1 bên
+            if (!isMe && (player.attackedByMe.isNotEmpty() || player.defendedAgainstMe.isNotEmpty())) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    if (player.attackedByMe.isNotEmpty()) {
+                        val atkSummary = player.attackedByMe.joinToString(", ") { log ->
+                            val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
+                            "${log.stars}★$dest"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFF10B981).copy(alpha = 0.15f))
+                                .border(0.5.dp, Color(0xFF10B981).copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                            contentAlignment = Alignment.CenterStart
+                        ) {
+                            Text(
+                                text = "⚔️ Bạn công: $atkSummary",
+                                color = Color(0xFF10B981),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else if (player.defendedAgainstMe.isNotEmpty()) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+
+                    if (player.defendedAgainstMe.isNotEmpty()) {
+                        val defSummary = player.defendedAgainstMe.joinToString(", ") { log ->
+                            val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
+                            "${log.stars}★$dest"
+                        }
+                        Box(
+                            modifier = Modifier
+                                .weight(1f)
+                                .clip(RoundedCornerShape(6.dp))
+                                .background(Color(0xFFF59E0B).copy(alpha = 0.15f))
+                                .border(0.5.dp, Color(0xFFF59E0B).copy(alpha = 0.4f), RoundedCornerShape(6.dp))
+                                .padding(horizontal = 7.dp, vertical = 3.dp),
+                            contentAlignment = Alignment.CenterEnd
+                        ) {
+                            Text(
+                                text = "🛡️ Bị đánh: $defSummary",
+                                color = Color(0xFFF59E0B),
+                                fontSize = 10.5.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                        }
+                    } else if (player.attackedByMe.isNotEmpty()) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
                 }
             }
 

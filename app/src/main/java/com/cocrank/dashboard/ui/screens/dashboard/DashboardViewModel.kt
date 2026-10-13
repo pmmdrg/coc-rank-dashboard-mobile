@@ -24,6 +24,9 @@ import com.cocrank.dashboard.domain.model.ClanData
 import com.cocrank.dashboard.domain.model.LeagueHistoryItem
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 data class DashboardUiState(
     val season: Season? = null,
@@ -222,9 +225,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         val listType = object : TypeToken<List<Player>>() {}.type
                         val cachedPlayers: List<Player> = gson.fromJson(json, listType)
                         _uiState.update { state ->
-                            if (state.previousPlayers.isEmpty()) {
-                                state.copy(previousPlayers = cachedPlayers)
-                            } else state
+                            state.copy(previousPlayers = cachedPlayers)
                         }
                     } catch (_: Exception) {}
                 }
@@ -239,14 +240,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     val seasonWithTag = if (activeTag.isNotBlank()) season.copy(myPlayerId = activeTag) else season
                     val normalizedCurrent = RankingCalculator.normalizeSeason(seasonWithTag)
                     _uiState.update { state ->
-                        val changes = if (state.previousPlayers.isNotEmpty()) {
-                            RankingCalculator.calculateRankChanges(
-                                currentSeason = normalizedCurrent,
-                                previousPlayers = state.previousPlayers,
-                                myPlayerTag = activeTag
-                            )
-                        } else state.rankChanges
-
                         val all = listOfNotNull(normalizedCurrent, state.previousSeason)
                         val displayed = if (state.activeSeasonIndex == 1 && state.previousSeason != null) {
                             state.previousSeason
@@ -261,7 +254,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             currentSeason = normalizedCurrent,
                             allSeasons = all,
                             stats = RankingCalculator.getRankingStats(normalizedDisplayed, activeTag),
-                            rankChanges = changes,
                             filteredPlayers = filterPlayers(normalizedDisplayed.players, state.searchQuery, state.selectedCategory)
                         )
                     }
@@ -343,15 +335,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun syncData() {
-        val currentSeason = _uiState.value.currentSeason ?: _uiState.value.season
-        val currentPlayers = currentSeason?.players ?: emptyList()
-        if (currentPlayers.isNotEmpty()) {
-            _uiState.update { it.copy(previousPlayers = currentPlayers) }
-            viewModelScope.launch {
-                userPreferences.savePreviousPlayersJson(gson.toJson(currentPlayers))
-            }
-        }
-
         viewModelScope.launch {
             val tag = userPreferences.playerTag.first()
             if (tag.isBlank()) {
@@ -361,25 +344,51 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
             _uiState.update { it.copy(isSyncing = true, syncMessage = "Đang đồng bộ Supercell API...", errorMessage = null) }
 
+            // Lấy danh sách snapshot của lần đồng bộ trước làm mốc so sánh (baseline)
+            // Ưu tiên:
+            // 1) previousPlayers trong state nếu đã có người chơi có rank hợp lệ
+            // 2) currentSeason?.players trong state nếu có người chơi có rank hợp lệ
+            val baselinePlayers = _uiState.value.previousPlayers.filter { it.rank > 0 }.ifEmpty {
+                _uiState.value.currentSeason?.players?.filter { it.rank > 0 } ?: emptyList()
+            }
+            val previousUpdatedAt = _uiState.value.rankChanges?.updatedAt
+
             val result = repository.syncAllWithApi(
                 overrideTag = tag,
                 onProgress = { msg -> _uiState.update { it.copy(syncMessage = msg) } }
             )
 
             result.onSuccess { syncRes ->
-                val prev = _uiState.value.previousPlayers
                 val activeIndex = _uiState.value.activeSeasonIndex
                 val displayedSeason = if (activeIndex == 1 && syncRes.previousSeason != null) syncRes.previousSeason else syncRes.currentSeason
-                val changes = RankingCalculator.calculateRankChanges(
-                    currentSeason = syncRes.currentSeason,
-                    previousPlayers = prev,
-                    myPlayerTag = tag
-                )
-                userPreferences.saveRankChangesJson(gson.toJson(changes))
-
                 val tagToUse = tag.ifBlank { displayedSeason.myPlayerId }
                 val seasonWithTag = if (tagToUse.isNotBlank()) displayedSeason.copy(myPlayerId = tagToUse) else displayedSeason
                 val normalizedDisplayed = RankingCalculator.normalizeSeason(seasonWithTag)
+
+                val newRankedCurrent = syncRes.currentSeason
+                val changes = if (baselinePlayers.isNotEmpty()) {
+                    RankingCalculator.calculateRankChanges(
+                        currentSeason = newRankedCurrent,
+                        previousPlayers = baselinePlayers,
+                        myPlayerTag = tag,
+                        previousUpdatedAt = previousUpdatedAt
+                    )
+                } else {
+                    RankChangesSnapshot(
+                        seasonId = newRankedCurrent.leagueSeasonId,
+                        groupTag = newRankedCurrent.leagueGroupTag,
+                        updatedAt = SimpleDateFormat("HH:mm:ss", Locale.getDefault()).format(Date()),
+                        previousUpdatedAt = null,
+                        changes = emptyList()
+                    )
+                }
+
+                // Ghi nhận ngay trạng thái vừa đồng bộ làm mốc so sánh cho lần đồng bộ kế tiếp
+                val newPlayers = newRankedCurrent.players.filter { it.rank > 0 }
+                if (newPlayers.isNotEmpty()) {
+                    userPreferences.savePreviousPlayersJson(gson.toJson(newPlayers))
+                }
+                userPreferences.saveRankChangesJson(gson.toJson(changes))
 
                 _uiState.update {
                     it.copy(
@@ -390,6 +399,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         stats = RankingCalculator.getRankingStats(normalizedDisplayed, tagToUse),
                         clanData = syncRes.clanData ?: it.clanData,
                         leagueHistory = if (syncRes.leagueHistory.isNotEmpty()) syncRes.leagueHistory else it.leagueHistory,
+                        previousPlayers = if (newPlayers.isNotEmpty()) newPlayers else it.previousPlayers,
                         rankChanges = changes,
                         filteredPlayers = filterPlayers(normalizedDisplayed.players, it.searchQuery, it.selectedCategory),
                         isSyncing = false,

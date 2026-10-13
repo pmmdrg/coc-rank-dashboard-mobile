@@ -226,7 +226,9 @@ object RankingCalculator {
                 val hasRankChange = rankDiff != 0
                 val hasBattleChange = cupsDiff != 0 || atkDiff != 0 || defDiff != 0
 
-                if (hasRankChange || (isMe && hasBattleChange)) {
+                // Bản thân: luôn ghi nhận để hiển thị thẻ nhắc nhở riêng (kể cả khi giữ nguyên thứ hạng)
+                // Đối thủ: chỉ ghi nhận khi có thay đổi từ thi đấu (cúp/công/thủ) làm thay đổi thứ hạng, loại trừ bị đẩy thụ động
+                if (isMe || (hasBattleChange && hasRankChange)) {
                     changes.add(
                         RankChangeItem(
                             id = p.id,

@@ -42,14 +42,7 @@ fun RankDiffBadge(
     modifier: Modifier = Modifier
 ) {
     if (diff == null || diff == 0) {
-        Text(
-            text = "—",
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Medium,
-            modifier = modifier
-        )
-        return
+        return // Không hiển thị dấu gạch ngang gây khó hiểu khi thứ hạng không đổi
     }
 
     val isPositive = diff > 0
