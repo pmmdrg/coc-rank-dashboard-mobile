@@ -43,6 +43,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
@@ -56,15 +57,12 @@ fun SettingsScreen(
     val state by viewModel.uiState.collectAsState()
 
     var playerTag by remember(state.savedPlayerTag) { mutableStateOf(state.savedPlayerTag) }
-    var apiToken by remember(state.savedApiToken) { mutableStateOf(state.savedApiToken) }
-    var proxyUrl by remember(state.savedProxyUrl) { mutableStateOf(state.savedProxyUrl) }
-    var showAdvanced by remember { mutableStateOf(false) }
 
     val textFieldColors = OutlinedTextFieldDefaults.colors(
-        focusedContainerColor = MaterialTheme.colorScheme.surface,
-        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.4f),
         focusedBorderColor = GoldAccent,
-        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
         focusedTextColor = MaterialTheme.colorScheme.onSurface,
         unfocusedTextColor = MaterialTheme.colorScheme.onSurface
     )
@@ -91,10 +89,10 @@ fun SettingsScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -106,7 +104,7 @@ fun SettingsScreen(
         ) {
             item {
                 SettingsSectionCard(title = "Tài Khoản Clash of Clans") {
-                    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         OutlinedTextField(
                             value = playerTag,
                             onValueChange = { playerTag = it },
@@ -114,64 +112,19 @@ fun SettingsScreen(
                             placeholder = { Text("#90UQRP0") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp),
+                            shape = RoundedCornerShape(10.dp),
                             colors = textFieldColors
                         )
 
                         Button(
                             onClick = {
-                                viewModel.saveConfig(playerTag, apiToken, proxyUrl)
+                                viewModel.saveConfig(playerTag, state.savedApiToken, state.savedProxyUrl)
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
+                            shape = RoundedCornerShape(10.dp),
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Text("Lưu Thay Đổi", color = Color.White, fontWeight = FontWeight.Bold)
-                        }
-
-                        // Collapsed Advanced Options for Power Users
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clip(RoundedCornerShape(6.dp))
-                                .clickable { showAdvanced = !showAdvanced }
-                                .padding(vertical = 6.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Text(
-                                text = if (showAdvanced) "Ẩn cấu hình máy chủ nâng cao ▲" else "Cấu hình máy chủ nâng cao (Tùy chọn) ▼",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-
-                        if (showAdvanced) {
-                            Text(
-                                text = "Mặc định ứng dụng đã tự động cấu hình sẵn Proxy RoyaleAPI và Token API chính thức. Bạn chỉ cần sửa nếu muốn sử dụng proxy/token riêng của mình.",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
-                                fontSize = 11.sp
-                            )
-                            OutlinedTextField(
-                                value = apiToken,
-                                onValueChange = { apiToken = it },
-                                label = { Text("Supercell API Token (Tùy chọn)") },
-                                placeholder = { Text("Mặc định dùng hệ thống") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = textFieldColors
-                            )
-                            OutlinedTextField(
-                                value = proxyUrl,
-                                onValueChange = { proxyUrl = it },
-                                label = { Text("Proxy URL Backend (Tùy chọn)") },
-                                placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
-                                singleLine = true,
-                                modifier = Modifier.fillMaxWidth(),
-                                shape = RoundedCornerShape(8.dp),
-                                colors = textFieldColors
-                            )
                         }
                     }
                 }
@@ -237,13 +190,7 @@ fun SettingsSectionCard(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(
-                1.dp,
-                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                RoundedCornerShape(12.dp)
-            )
+            .liquidGlass(shape = RoundedCornerShape(18.dp))
             .padding(16.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

@@ -64,6 +64,7 @@ import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.data.repository.RankRepository
 import com.cocrank.dashboard.domain.model.RatingCategory
 import com.cocrank.dashboard.ui.components.PlayerItemCard
+import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.components.SearchAndFilterBar
 import com.cocrank.dashboard.ui.components.SyncPromptDialog
 import com.cocrank.dashboard.ui.theme.GoldAccent
@@ -144,11 +145,11 @@ fun DashboardScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -216,13 +217,7 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -516,13 +511,7 @@ fun DashboardScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

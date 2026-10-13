@@ -150,6 +150,39 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
+        // Observe cached RankChanges
+        viewModelScope.launch {
+            userPreferences.rankChangesJson.collectLatest { json ->
+                if (json.isNotBlank()) {
+                    try {
+                        val cachedChanges = gson.fromJson(json, RankChangesSnapshot::class.java)
+                        _uiState.update { state ->
+                            if (state.rankChanges == null || state.rankChanges.changes.isEmpty()) {
+                                state.copy(rankChanges = cachedChanges)
+                            } else state
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+        // Observe cached PreviousPlayers
+        viewModelScope.launch {
+            userPreferences.previousPlayersJson.collectLatest { json ->
+                if (json.isNotBlank()) {
+                    try {
+                        val listType = object : TypeToken<List<Player>>() {}.type
+                        val cachedPlayers: List<Player> = gson.fromJson(json, listType)
+                        _uiState.update { state ->
+                            if (state.previousPlayers.isEmpty()) {
+                                state.copy(previousPlayers = cachedPlayers)
+                            } else state
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
         // Observe latest season from local DB
         viewModelScope.launch {
             repository.latestSeason.collectLatest { season ->
@@ -251,9 +284,13 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun syncData() {
-        val currentSeason = _uiState.value.season
-        if (currentSeason != null) {
-            _uiState.update { it.copy(previousPlayers = currentSeason.players) }
+        val currentSeason = _uiState.value.season ?: _uiState.value.currentSeason
+        val currentPlayers = currentSeason?.players ?: emptyList()
+        if (currentPlayers.isNotEmpty()) {
+            _uiState.update { it.copy(previousPlayers = currentPlayers) }
+            viewModelScope.launch {
+                userPreferences.savePreviousPlayersJson(gson.toJson(currentPlayers))
+            }
         }
 
         viewModelScope.launch {
@@ -279,6 +316,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     previousPlayers = prev,
                     myPlayerTag = tag
                 )
+                userPreferences.saveRankChangesJson(gson.toJson(changes))
 
                 _uiState.update {
                     it.copy(

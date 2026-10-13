@@ -47,23 +47,15 @@ fun PlayerItemCard(
         else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.2f)
     }
 
-    val cardBorderColor = if (isMe) {
-        GoldAccent
-    } else {
-        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
-    }
-
-    val cardBackground = MaterialTheme.colorScheme.surface
-
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(cardBackground)
-            .border(
-                width = if (isMe) 1.5.dp else 1.dp,
-                color = cardBorderColor,
-                shape = RoundedCornerShape(12.dp)
+            .liquidGlass(
+                shape = RoundedCornerShape(14.dp),
+                elevation = if (isMe) 8.dp else 4.dp,
+                accentBorder = if (isMe) GoldAccent else null,
+                surfaceAlphaStart = if (isMe) 0.82f else 0.72f,
+                surfaceAlphaEnd = if (isMe) 0.90f else 0.82f
             )
             .padding(12.dp)
     ) {

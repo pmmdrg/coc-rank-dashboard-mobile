@@ -32,6 +32,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -51,6 +52,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.cocrank.dashboard.R
+import com.cocrank.dashboard.ui.components.AmbientSpectrumBackground
+import com.cocrank.dashboard.ui.screens.changes.RankChangesScreen
 import com.cocrank.dashboard.ui.screens.clan.ClanScreen
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardScreen
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
@@ -61,6 +64,7 @@ import com.cocrank.dashboard.ui.theme.GoldAccent
 sealed class Screen(val route: String, val title: String, @DrawableRes val iconRes: Int) {
     object Personal : Screen("personal", "Cá nhân", R.drawable.ph_user)
     object Season : Screen("season", "Mùa giải", R.drawable.ph_trophy)
+    object Changes : Screen("changes", "Biến động", R.drawable.ph_chart_line_up)
     object Clan : Screen("clan", "Clan", R.drawable.ph_shield)
     object Settings : Screen("settings", "Cài đặt", R.drawable.ph_gear)
 }
@@ -68,8 +72,9 @@ sealed class Screen(val route: String, val title: String, @DrawableRes val iconR
 private fun getScreenIndex(route: String?): Int = when (route) {
     Screen.Personal.route -> 0
     Screen.Season.route -> 1
-    Screen.Clan.route -> 2
-    Screen.Settings.route -> 3
+    Screen.Changes.route -> 2
+    Screen.Clan.route -> 3
+    Screen.Settings.route -> 4
     else -> 0
 }
 
@@ -104,6 +109,7 @@ fun AppNavigation(
     viewModel: DashboardViewModel,
     modifier: Modifier = Modifier
 ) {
+    val state by viewModel.uiState.collectAsState()
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -111,78 +117,87 @@ fun AppNavigation(
     val bottomScreens = listOf(
         Screen.Personal,
         Screen.Season,
+        Screen.Changes,
         Screen.Clan
     )
 
-    Box(
-        modifier = modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
+    AmbientSpectrumBackground(
+        modifier = modifier.fillMaxSize(),
+        isDark = state.isDarkTheme
     ) {
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Personal.route,
-            modifier = Modifier.fillMaxSize()
-        ) {
-            composable(
-                route = Screen.Personal.route,
-                enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 0) },
-                exitTransition = { createExitTransition(0, getScreenIndex(targetState.destination.route)) }
+        Box(modifier = Modifier.fillMaxSize()) {
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Personal.route,
+                modifier = Modifier.fillMaxSize()
             ) {
-                PersonalScreen(
-                    viewModel = viewModel,
-                    onOpenSettings = {
-                        navController.navigate(Screen.Settings.route)
-                    }
-                )
-            }
-            composable(
-                route = Screen.Season.route,
-                enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 1) },
-                exitTransition = { createExitTransition(1, getScreenIndex(targetState.destination.route)) }
-            ) {
-                DashboardScreen(viewModel = viewModel)
-            }
-            composable(
-                route = Screen.Clan.route,
-                enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 2) },
-                exitTransition = { createExitTransition(2, getScreenIndex(targetState.destination.route)) }
-            ) {
-                ClanScreen(viewModel = viewModel)
-            }
-            composable(
-                route = Screen.Settings.route,
-                enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 3) },
-                exitTransition = { createExitTransition(3, getScreenIndex(targetState.destination.route)) }
-            ) {
-                SettingsScreen(
-                    viewModel = viewModel,
-                    onNavigateBack = { navController.popBackStack() }
-                )
-            }
-        }
-
-        // Floating Liquid Capsule Navigation Bar overlay (chỉ hiện ở 3 màn hình chính)
-        if (currentRoute != Screen.Settings.route) {
-            LiquidCapsuleNavigationBar(
-                screens = bottomScreens,
-                currentRoute = currentRoute,
-                onNavigate = { screen ->
-                    if (currentRoute != screen.route) {
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
+                composable(
+                    route = Screen.Personal.route,
+                    enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 0) },
+                    exitTransition = { createExitTransition(0, getScreenIndex(targetState.destination.route)) }
+                ) {
+                    PersonalScreen(
+                        viewModel = viewModel,
+                        onOpenSettings = {
+                            navController.navigate(Screen.Settings.route)
                         }
-                    }
-                },
-                modifier = Modifier
-                    .align(Alignment.BottomCenter)
-                    .navigationBarsPadding()
-                    .padding(bottom = 12.dp)
-            )
+                    )
+                }
+                composable(
+                    route = Screen.Season.route,
+                    enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 1) },
+                    exitTransition = { createExitTransition(1, getScreenIndex(targetState.destination.route)) }
+                ) {
+                    DashboardScreen(viewModel = viewModel)
+                }
+                composable(
+                    route = Screen.Changes.route,
+                    enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 2) },
+                    exitTransition = { createExitTransition(2, getScreenIndex(targetState.destination.route)) }
+                ) {
+                    RankChangesScreen(viewModel = viewModel)
+                }
+                composable(
+                    route = Screen.Clan.route,
+                    enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 3) },
+                    exitTransition = { createExitTransition(3, getScreenIndex(targetState.destination.route)) }
+                ) {
+                    ClanScreen(viewModel = viewModel)
+                }
+                composable(
+                    route = Screen.Settings.route,
+                    enterTransition = { createEnterTransition(getScreenIndex(initialState.destination.route), 4) },
+                    exitTransition = { createExitTransition(4, getScreenIndex(targetState.destination.route)) }
+                ) {
+                    SettingsScreen(
+                        viewModel = viewModel,
+                        onNavigateBack = { navController.popBackStack() }
+                    )
+                }
+            }
+
+            // Floating Liquid Capsule Navigation Bar overlay (chỉ hiện ở 4 màn hình chính)
+            if (currentRoute != Screen.Settings.route) {
+                LiquidCapsuleNavigationBar(
+                    screens = bottomScreens,
+                    currentRoute = currentRoute,
+                    onNavigate = { screen ->
+                        if (currentRoute != screen.route) {
+                            navController.navigate(screen.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    },
+                    modifier = Modifier
+                        .align(Alignment.BottomCenter)
+                        .navigationBarsPadding()
+                        .padding(bottom = 12.dp)
+                )
+            }
         }
     }
 }

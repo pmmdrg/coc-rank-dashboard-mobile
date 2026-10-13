@@ -51,6 +51,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.cocrank.dashboard.R
 import com.cocrank.dashboard.domain.model.ClanMember
+import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import java.text.NumberFormat
@@ -152,10 +153,10 @@ fun ClanScreen(
                         }
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -170,13 +171,7 @@ fun ClanScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(18.dp))
                         .padding(16.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

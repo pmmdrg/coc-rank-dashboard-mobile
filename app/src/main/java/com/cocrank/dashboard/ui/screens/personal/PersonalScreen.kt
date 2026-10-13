@@ -62,6 +62,7 @@ import com.cocrank.dashboard.R
 import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.domain.usecase.RankingCalculator
 import com.cocrank.dashboard.ui.components.RatingBadge
+import com.cocrank.dashboard.ui.components.liquidGlass
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
@@ -142,11 +143,11 @@ fun PersonalScreen(
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.background
+                    containerColor = Color.Transparent
                 )
             )
         },
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Transparent,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -163,13 +164,7 @@ fun PersonalScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            width = 1.dp,
-                            color = MaterialTheme.colorScheme.outline.copy(alpha = 0.8f),
-                            shape = RoundedCornerShape(20.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(20.dp), elevation = 12.dp)
                         .padding(18.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -328,13 +323,7 @@ fun PersonalScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -508,13 +497,7 @@ fun PersonalScreen(
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(
-                            1.dp,
-                            MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                            RoundedCornerShape(18.dp)
-                        )
+                        .liquidGlass(shape = RoundedCornerShape(18.dp))
                         .padding(14.dp)
                 ) {
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {

@@ -23,6 +23,8 @@ class UserPreferences(private val context: Context) {
         val KEY_LEAGUE_HISTORY_JSON = stringPreferencesKey("league_history_json")
         val KEY_PREVIOUS_SEASON_JSON = stringPreferencesKey("previous_season_json")
         val KEY_ACTIVE_SEASON_INDEX = androidx.datastore.preferences.core.intPreferencesKey("active_season_index")
+        val KEY_RANK_CHANGES_JSON = stringPreferencesKey("rank_changes_json")
+        val KEY_PREVIOUS_PLAYERS_JSON = stringPreferencesKey("previous_players_json")
     }
 
     val playerTag: Flow<String> = context.dataStore.data.map { preferences ->
@@ -55,6 +57,14 @@ class UserPreferences(private val context: Context) {
 
     val activeSeasonIndex: Flow<Int> = context.dataStore.data.map { preferences ->
         preferences[KEY_ACTIVE_SEASON_INDEX] ?: 0
+    }
+
+    val rankChangesJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_RANK_CHANGES_JSON] ?: ""
+    }
+
+    val previousPlayersJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_PREVIOUS_PLAYERS_JSON] ?: ""
     }
 
     suspend fun savePlayerTag(tag: String) {
@@ -103,6 +113,18 @@ class UserPreferences(private val context: Context) {
     suspend fun saveActiveSeasonIndex(index: Int) {
         context.dataStore.edit { preferences ->
             preferences[KEY_ACTIVE_SEASON_INDEX] = index
+        }
+    }
+
+    suspend fun saveRankChangesJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_RANK_CHANGES_JSON] = json
+        }
+    }
+
+    suspend fun savePreviousPlayersJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_PREVIOUS_PLAYERS_JSON] = json
         }
     }
 }
