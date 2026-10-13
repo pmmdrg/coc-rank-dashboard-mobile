@@ -1,0 +1,39 @@
+# Android Build & Outputs
+*.apk
+*.aar
+*.aab
+*.dex
+*.class
+build/
+*/build/
+app/build/
+dist/
+/dist/
+
+# Gradle
+.gradle/
+buildOutputCleanup/
+
+# Local configuration & Secrets
+local.properties
+keystore.properties
+app/keystore.properties
+*.jks
+*.keystore
+keystore/
+app/keystore/
+service-account*.json
+
+# Android Studio & IDE
+*.iml
+.idea/
+.DS_Store
+Thumbs.db
+Desktop.ini
+captures/
+.externalNativeBuild
+.cxx
+.navigation/
+
+# Logs
+*.log

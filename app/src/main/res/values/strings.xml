@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">CoC Rank</string>
+    <string name="league">Giải đấu</string>
+    <string name="season">Mùa giải</string>
+    <string name="my_rank">Thứ hạng của tôi</string>
+    <string name="current_cups">Cúp hiện tại</string>
+    <string name="max_possible_cups">Cúp tối đa có thể đạt</string>
+    <string name="lowest_possible_rank">Rank thấp nhất có thể</string>
+    <string name="can_pass_me">Đối thủ có thể vượt</string>
+    <string name="below_me">Đối thủ chắc chắn dưới</string>
+    <string name="attacks">Lượt đánh</string>
+    <string name="defenses">Lượt thủ</string>
+    <string name="sync_button">Đồng bộ</string>
+    <string name="player_tag_placeholder">Nhập Player Tag (ví dụ: #90UQRP0)</string>
+</resources>
