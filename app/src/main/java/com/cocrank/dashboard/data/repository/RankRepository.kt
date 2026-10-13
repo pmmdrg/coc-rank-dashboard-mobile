@@ -219,7 +219,9 @@ class RankRepository(
                 defenseDestruction = memberDefDest,
                 attackAvgStars = if (isMe && myAtkStars > 0) myAtkStars else null,
                 defenseAvgStars = if (isMe && myDefStars > 0) myDefStars else null,
-                isMe = isMe
+                isMe = isMe,
+                attackedByMe = if (isMe) emptyList() else opponentAtkLogs,
+                defendedAgainstMe = if (isMe) emptyList() else opponentDefLogs
             )
         }
     }

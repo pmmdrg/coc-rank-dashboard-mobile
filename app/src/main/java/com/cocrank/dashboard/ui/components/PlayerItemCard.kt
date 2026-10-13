@@ -5,6 +5,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,6 +31,7 @@ import androidx.compose.ui.unit.sp
 import com.cocrank.dashboard.domain.model.Player
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun PlayerItemCard(
     player: Player,
@@ -67,7 +70,7 @@ fun PlayerItemCard(
         Column(modifier = Modifier.fillMaxWidth()) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
                 // Rank Circle
                 Box(
@@ -88,7 +91,7 @@ fun PlayerItemCard(
 
                 Spacer(modifier = Modifier.width(10.dp))
 
-                // Name & Tags
+                // Name, Tags & Matchup Badges
                 Column(modifier = Modifier.weight(1f)) {
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
@@ -136,6 +139,57 @@ fun PlayerItemCard(
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f)
                             )
+                        }
+                    }
+
+                    // Badges Đối Đầu từ Battle Log (So với bản thân)
+                    if (!isMe && (player.attackedByMe.isNotEmpty() || player.defendedAgainstMe.isNotEmpty())) {
+                        Spacer(modifier = Modifier.height(4.dp))
+                        FlowRow(
+                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                            verticalArrangement = Arrangement.spacedBy(3.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (player.attackedByMe.isNotEmpty()) {
+                                val atkSummary = player.attackedByMe.joinToString(", ") { log ->
+                                    val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
+                                    "${log.stars}★$dest"
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color(0xFF10B981).copy(alpha = 0.15f))
+                                        .border(0.5.dp, Color(0xFF10B981).copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "⚔️ Bạn công: $atkSummary",
+                                        color = Color(0xFF10B981),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
+                            if (player.defendedAgainstMe.isNotEmpty()) {
+                                val defSummary = player.defendedAgainstMe.joinToString(", ") { log ->
+                                    val dest = if (log.destructionPercentage > 0) " (${log.destructionPercentage.toInt()}%)" else ""
+                                    "${log.stars}★$dest"
+                                }
+                                Box(
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color(0xFFF59E0B).copy(alpha = 0.15f))
+                                        .border(0.5.dp, Color(0xFFF59E0B).copy(alpha = 0.4f), RoundedCornerShape(4.dp))
+                                        .padding(horizontal = 5.dp, vertical = 2.dp)
+                                ) {
+                                    Text(
+                                        text = "🛡️ Bị đánh: $defSummary",
+                                        color = Color(0xFFF59E0B),
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.SemiBold
+                                    )
+                                }
+                            }
                         }
                     }
                 }

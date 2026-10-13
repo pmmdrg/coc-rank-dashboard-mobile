@@ -31,7 +31,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -43,7 +42,6 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavBackStackEntry
@@ -207,14 +205,14 @@ fun LiquidCapsuleNavigationBar(
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(62.dp)
+                .height(56.dp)
                 .shadow(
                     elevation = 20.dp,
-                    shape = RoundedCornerShape(32.dp),
+                    shape = RoundedCornerShape(28.dp),
                     spotColor = Color.Black.copy(alpha = 0.6f),
                     ambientColor = Color.Black.copy(alpha = 0.35f)
                 )
-                .clip(RoundedCornerShape(32.dp))
+                .clip(RoundedCornerShape(28.dp))
                 .background(
                     brush = Brush.verticalGradient(
                         listOf(
@@ -232,7 +230,7 @@ fun LiquidCapsuleNavigationBar(
                             Color.White.copy(alpha = 0.06f)
                         )
                     ),
-                    shape = RoundedCornerShape(32.dp)
+                    shape = RoundedCornerShape(28.dp)
                 )
                 .padding(horizontal = 6.dp, vertical = 5.dp)
         ) {
@@ -263,11 +261,11 @@ fun LiquidCapsuleNavigationBar(
                         .padding(horizontal = 3.dp, vertical = 2.dp)
                         .shadow(
                             elevation = 8.dp,
-                            shape = RoundedCornerShape(26.dp),
+                            shape = RoundedCornerShape(23.dp),
                             spotColor = GoldAccent.copy(alpha = 0.45f),
                             ambientColor = GoldAccent.copy(alpha = 0.2f)
                         )
-                        .clip(RoundedCornerShape(26.dp))
+                        .clip(RoundedCornerShape(23.dp))
                         .background(
                             brush = Brush.verticalGradient(
                                 listOf(
@@ -284,12 +282,12 @@ fun LiquidCapsuleNavigationBar(
                                     GoldAccent.copy(alpha = 0.25f)
                                 )
                             ),
-                            shape = RoundedCornerShape(26.dp)
+                            shape = RoundedCornerShape(23.dp)
                         )
                 )
             }
 
-            // Tab items row
+            // Tab items row (Icon-only, enlarged with liquid scaling)
             Row(
                 modifier = Modifier.fillMaxSize(),
                 verticalAlignment = Alignment.CenterVertically
@@ -297,7 +295,7 @@ fun LiquidCapsuleNavigationBar(
                 screens.forEachIndexed { index, screen ->
                     val isSelected = selectedIndex == index
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.12f else 0.92f,
+                        targetValue = if (isSelected) 1.15f else 0.92f,
                         animationSpec = spring(
                             dampingRatio = 0.68f,
                             stiffness = Spring.StiffnessMediumLow
@@ -305,12 +303,12 @@ fun LiquidCapsuleNavigationBar(
                         label = "tab_scale_$index"
                     )
                     val tabColor by animateColorAsState(
-                        targetValue = if (isSelected) GoldAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
+                        targetValue = if (isSelected) GoldAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                         animationSpec = tween(durationMillis = 200),
                         label = "tab_color_$index"
                     )
 
-                    Column(
+                    Box(
                         modifier = Modifier
                             .weight(1f)
                             .fillMaxHeight()
@@ -320,27 +318,18 @@ fun LiquidCapsuleNavigationBar(
                             ) {
                                 onNavigate(screen)
                             },
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
+                        contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             painter = painterResource(id = screen.iconRes),
                             contentDescription = screen.title,
                             tint = tabColor,
                             modifier = Modifier
-                                .size(19.dp)
+                                .size(24.dp)
                                 .graphicsLayer {
                                     scaleX = iconScale
                                     scaleY = iconScale
                                 }
-                        )
-                        Spacer(modifier = Modifier.height(2.dp))
-                        Text(
-                            text = screen.title,
-                            fontSize = 11.sp,
-                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                            color = tabColor,
-                            maxLines = 1
                         )
                     }
                 }

@@ -175,47 +175,50 @@ fun PersonalScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically,
-                                modifier = Modifier.weight(1f, fill = false)
+                            // League Badge Icon (Huy hiệu giải đấu)
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(GoldAccent.copy(alpha = 0.12f))
+                                    .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // League Badge Icon (Huy hiệu giải đấu)
-                                Box(
-                                    modifier = Modifier
-                                        .size(52.dp)
-                                        .clip(RoundedCornerShape(14.dp))
-                                        .background(GoldAccent.copy(alpha = 0.12f))
-                                        .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(14.dp)),
-                                    contentAlignment = Alignment.Center
+                                AsyncImage(
+                                    model = ImageRequest.Builder(context)
+                                        .data(leagueIconUrl)
+                                        .crossfade(true)
+                                        .error(R.drawable.ph_trophy)
+                                        .placeholder(R.drawable.ph_trophy)
+                                        .build(),
+                                    contentDescription = season?.league ?: "Huy hiệu giải đấu",
+                                    modifier = Modifier.size(40.dp),
+                                    contentScale = ContentScale.Fit
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.SpaceBetween
                                 ) {
-                                    AsyncImage(
-                                        model = ImageRequest.Builder(context)
-                                            .data(leagueIconUrl)
-                                            .crossfade(true)
-                                            .error(R.drawable.ph_trophy)
-                                            .placeholder(R.drawable.ph_trophy)
-                                            .build(),
-                                        contentDescription = season?.league ?: "Huy hiệu giải đấu",
-                                        modifier = Modifier.size(40.dp),
-                                        contentScale = ContentScale.Fit
-                                    )
-                                }
-                                Spacer(modifier = Modifier.width(12.dp))
-                                Column {
                                     Row(
                                         verticalAlignment = Alignment.CenterVertically,
-                                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                        modifier = Modifier.weight(1f, fill = false)
                                     ) {
                                         Text(
                                             text = my?.name ?: "Tài khoản của bạn",
                                             fontWeight = FontWeight.Bold,
                                             fontSize = 17.sp,
-                                            color = MaterialTheme.colorScheme.onSurface
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis
                                         )
-                                        // Huy hiệu League Tier chuyển xuống đây
+                                        // Huy hiệu League Tier
                                         if (season != null && season.league.isNotBlank() && season.league != "--") {
                                             Box(
                                                 modifier = Modifier
@@ -233,17 +236,17 @@ fun PersonalScreen(
                                             }
                                         }
                                     }
-                                    Spacer(modifier = Modifier.height(2.dp))
-                                    Text(
-                                        text = my?.playerTag ?: state.savedPlayerTag.ifBlank { "#Chưa cài tag" },
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                }
-                            }
 
-                            if (my != null) {
-                                RatingBadge(category = my.rating)
+                                    if (my != null) {
+                                        RatingBadge(category = my.rating)
+                                    }
+                                }
+                                Spacer(modifier = Modifier.height(2.dp))
+                                Text(
+                                    text = my?.playerTag ?: state.savedPlayerTag.ifBlank { "#Chưa cài tag" },
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
 

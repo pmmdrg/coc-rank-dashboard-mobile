@@ -86,6 +86,8 @@ object RankingCalculator {
         val maxDefenses = season.maxDefenses.takeIf { it > 0 } ?: maxAttacks
         val initialMaxCups = (maxAttacks + maxDefenses) * 40
         val myCleanTag = season.myPlayerId.trim().uppercase().removePrefix("#")
+        val attackMap = season.attackLogs.groupBy { it.opponentPlayerTag.trim().uppercase().removePrefix("#") }
+        val defenseMap = season.defenseLogs.groupBy { it.opponentPlayerTag.trim().uppercase().removePrefix("#") }
 
         val updatedPlayers = season.players.mapIndexed { idx, p ->
             val attacks = min(maxAttacks, max(0, p.attacks))
@@ -101,6 +103,8 @@ object RankingCalculator {
             val rating = calculatePlayerRating(currentCups, initialMaxCups)
             val pTag = (p.playerTag ?: p.id).trim().uppercase().removePrefix("#")
             val isMe = myCleanTag.isNotBlank() && (pTag == myCleanTag || p.id.uppercase().removePrefix("#") == myCleanTag)
+            val attackedByMe = if (isMe) emptyList() else (p.attackedByMe.ifEmpty { attackMap[pTag] ?: emptyList() })
+            val defendedAgainstMe = if (isMe) emptyList() else (p.defendedAgainstMe.ifEmpty { defenseMap[pTag] ?: emptyList() })
 
             p.copy(
                 id = p.id.ifBlank { "p-${idx + 1}" },
@@ -111,7 +115,9 @@ object RankingCalculator {
                 maxPossibleCups = maxCups,
                 rating = rating,
                 attackCups = currentCups,
-                isMe = isMe
+                isMe = isMe,
+                attackedByMe = attackedByMe,
+                defendedAgainstMe = defendedAgainstMe
             )
         }
 

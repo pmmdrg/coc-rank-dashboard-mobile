@@ -81,7 +81,9 @@ data class Player(
     val defenseLoseCount: Int? = null,
     val attackAvgStars: Double? = null,
     val defenseAvgStars: Double? = null,
-    val isMe: Boolean = false
+    val isMe: Boolean = false,
+    val attackedByMe: List<BattleLogEntry> = emptyList(),
+    val defendedAgainstMe: List<BattleLogEntry> = emptyList()
 )
 
 data class Season(
