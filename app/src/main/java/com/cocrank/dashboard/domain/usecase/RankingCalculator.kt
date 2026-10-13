@@ -113,13 +113,18 @@ object RankingCalculator {
             )
         }
 
-        val rankedPlayers = sortAndRankPlayers(updatedPlayers)
+        val rankedPlayers = if (updatedPlayers.size <= 1) {
+            // Nếu chỉ có 1 người chơi (chưa nạp được bảng đấu đầy đủ), giữ nguyên unranked (rank = 0)
+            updatedPlayers.map { it.copy(rank = 0) }
+        } else {
+            sortAndRankPlayers(updatedPlayers)
+        }
         val myPlayer = rankedPlayers.firstOrNull { it.isMe }
 
         return season.copy(
             maxAttacks = maxAttacks,
             maxDefenses = maxDefenses,
-            myPlayerId = season.myPlayerId.ifBlank { myPlayer?.playerTag ?: rankedPlayers.firstOrNull()?.id ?: "" },
+            myPlayerId = season.myPlayerId.ifBlank { myPlayer?.playerTag ?: "" },
             players = rankedPlayers
         )
     }
@@ -127,13 +132,17 @@ object RankingCalculator {
     /**
      * Tính toán tổng hợp số liệu xếp hạng (RankingStats)
      */
-    fun getRankingStats(season: Season): RankingStats {
-        val normalized = normalizeSeason(season)
-        val myCleanTag = season.myPlayerId.trim().uppercase().removePrefix("#")
+    fun getRankingStats(season: Season, myPlayerTagOverride: String? = null): RankingStats {
+        val myCleanTag = (myPlayerTagOverride?.takeIf { it.isNotBlank() } ?: season.myPlayerId)
+            .trim().uppercase().removePrefix("#")
+        val seasonWithTag = if (myCleanTag.isNotBlank() && season.myPlayerId != myCleanTag) {
+            season.copy(myPlayerId = myCleanTag)
+        } else season
+        val normalized = normalizeSeason(seasonWithTag)
 
         val myPlayer = normalized.players.firstOrNull {
             val pTag = (it.playerTag ?: it.id).trim().uppercase().removePrefix("#")
-            myCleanTag.isNotBlank() && pTag == myCleanTag
+            myCleanTag.isNotBlank() && (pTag == myCleanTag || it.id.trim().uppercase().removePrefix("#") == myCleanTag)
         } ?: normalized.players.firstOrNull { it.isMe }
 
         val ratingCounts = mutableMapOf<RatingCategory, Int>().apply {

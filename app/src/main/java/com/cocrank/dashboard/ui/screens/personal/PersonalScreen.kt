@@ -2,7 +2,6 @@ package com.cocrank.dashboard.ui.screens.personal
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -11,12 +10,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -26,8 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
-import androidx.compose.material3.Switch
-import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -40,15 +35,18 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.cocrank.dashboard.R
-import com.cocrank.dashboard.domain.model.RatingCategory
+import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.ui.components.RatingBadge
 import com.cocrank.dashboard.ui.components.StatCard
-import com.cocrank.dashboard.ui.components.SyncPromptDialog
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
@@ -66,20 +64,13 @@ fun PersonalScreen(
     val my = state.stats?.myPlayer
     val stats = state.stats
     val season = state.season
+    val context = LocalContext.current
 
     LaunchedEffect(state.errorMessage) {
         state.errorMessage?.let { msg ->
             snackbarHostState.showSnackbar(msg)
             viewModel.clearErrorMessage()
         }
-    }
-
-    if (state.showConfigDialog) {
-        SyncPromptDialog(
-            initialPlayerTag = state.savedPlayerTag,
-            onDismiss = { viewModel.dismissConfigDialog() },
-            onConfirm = { tag -> viewModel.savePlayerTag(tag) }
-        )
     }
 
     Scaffold(
@@ -164,6 +155,8 @@ fun PersonalScreen(
         ) {
             // Hero Player Profile Banner
             item {
+                val leagueIconUrl = LeagueIcons.getLeagueIconUrl(season?.league, season?.leagueIconUrl)
+
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -183,19 +176,25 @@ fun PersonalScreen(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Row(verticalAlignment = Alignment.CenterVertically) {
+                                // League Badge Icon (thay cho avatar placeholder)
                                 Box(
                                     modifier = Modifier
-                                        .size(46.dp)
-                                        .clip(CircleShape)
-                                        .background(GoldAccent.copy(alpha = 0.15f))
-                                        .border(1.dp, GoldAccent.copy(alpha = 0.4f), CircleShape),
+                                        .size(48.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GoldAccent.copy(alpha = 0.12f))
+                                        .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
                                     contentAlignment = Alignment.Center
                                 ) {
-                                    Icon(
-                                        painter = painterResource(id = R.drawable.ph_user),
-                                        contentDescription = null,
-                                        tint = GoldAccent,
-                                        modifier = Modifier.size(24.dp)
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(context)
+                                            .data(leagueIconUrl)
+                                            .crossfade(true)
+                                            .error(R.drawable.ph_trophy)
+                                            .placeholder(R.drawable.ph_trophy)
+                                            .build(),
+                                        contentDescription = season?.league ?: "Huy hiệu giải đấu",
+                                        modifier = Modifier.size(38.dp),
+                                        contentScale = ContentScale.Fit
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(12.dp))
@@ -247,7 +246,7 @@ fun PersonalScreen(
                 }
             }
 
-            // Section 1: Thẻ chỉ số tổng quan
+            // Section 1: Thẻ chỉ số thành tích
             item {
                 Text(
                     text = "CHỈ SỐ THÀNH TÍCH",
@@ -256,6 +255,17 @@ fun PersonalScreen(
                     letterSpacing = 0.5.sp,
                     modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
                 )
+
+                val hasTournamentGroup = (season?.players?.size ?: 0) > 1
+                val isRankValid = my != null && my.rank > 0 && hasTournamentGroup
+                val currentRankValue = if (isRankValid) "#${my!!.rank}" else "--"
+                val currentRankSubtitle = if (!hasTournamentGroup) {
+                    "Chưa vào bảng đấu"
+                } else if (my?.rankDiff != null && my.rankDiff != 0) {
+                    if (my.rankDiff > 0) "Tăng ${my.rankDiff} bậc" else "Hạ ${-my.rankDiff} bậc"
+                } else {
+                    "Chưa đổi hạng"
+                }
 
                 Column(
                     modifier = Modifier.fillMaxWidth(),
@@ -268,10 +278,8 @@ fun PersonalScreen(
                     ) {
                         StatCard(
                             title = "Hạng hiện tại",
-                            value = if (my != null) "#${my.rank}" else "--",
-                            subtitle = if (my?.rankDiff != null && my.rankDiff != 0) {
-                                if (my.rankDiff > 0) "Tăng ${my.rankDiff} bậc" else "Hạ ${-my.rankDiff} bậc"
-                            } else "Chưa đổi hạng",
+                            value = currentRankValue,
+                            subtitle = currentRankSubtitle,
                             iconRes = R.drawable.ph_trophy,
                             accentColor = GoldAccent,
                             modifier = Modifier.weight(1f)
@@ -301,8 +309,8 @@ fun PersonalScreen(
                         )
                         StatCard(
                             title = "Rank thấp nhất",
-                            value = if (stats != null && stats.lowestPossibleRank > 0) "#${stats.lowestPossibleRank}" else "--",
-                            subtitle = "Kịch bản xấu nhất",
+                            value = if (stats != null && stats.lowestPossibleRank > 0 && hasTournamentGroup) "#${stats.lowestPossibleRank}" else "--",
+                            subtitle = if (!hasTournamentGroup) "Chưa vào bảng đấu" else "Kịch bản xấu nhất",
                             iconRes = R.drawable.ph_trend_down,
                             accentColor = RedAlarm,
                             modifier = Modifier.weight(1f)
@@ -321,14 +329,16 @@ fun PersonalScreen(
                     modifier = Modifier.padding(start = 2.dp, top = 6.dp, bottom = 2.dp)
                 )
 
+                val hasTournamentGroup = (season?.players?.size ?: 0) > 1
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     StatCard(
                         title = "Đối thủ có thể vượt",
-                        value = "${stats?.playersWhoCanPassMe ?: 0} người",
-                        subtitle = "${stats?.playersDefinitelyBelowMe ?: 0} chắc chắn xếp dưới",
+                        value = if (hasTournamentGroup) "${stats?.playersWhoCanPassMe ?: 0} người" else "--",
+                        subtitle = if (hasTournamentGroup) "${stats?.playersDefinitelyBelowMe ?: 0} chắc chắn xếp dưới" else "Chưa có bảng đấu",
                         iconRes = R.drawable.ph_users,
                         accentColor = Color(0xFFA855F7),
                         modifier = Modifier.weight(1f)
@@ -341,93 +351,6 @@ fun PersonalScreen(
                         accentColor = Color(0xFFF97316),
                         modifier = Modifier.weight(1f)
                     )
-                }
-            }
-
-            // Section 3: Thao tác & Cài đặt nhanh
-            item {
-                Text(
-                    text = "TÙY CHỌN NHANH",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    letterSpacing = 0.5.sp,
-                    modifier = Modifier.padding(start = 2.dp, top = 6.dp, bottom = 2.dp)
-                )
-
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.8f), RoundedCornerShape(16.dp))
-                        .padding(16.dp)
-                ) {
-                    Column(verticalArrangement = Arrangement.spacedBy(14.dp)) {
-                        // Đổi Player Tag
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .clickable { viewModel.openConfigDialog() },
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Đổi Player Tag",
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    text = state.savedPlayerTag.ifBlank { "Chưa thiết lập" },
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Icon(
-                                painter = painterResource(id = R.drawable.ph_arrows_clockwise),
-                                contentDescription = null,
-                                tint = GoldAccent,
-                                modifier = Modifier.size(18.dp)
-                            )
-                        }
-
-                        Spacer(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.4f))
-                        )
-
-                        // Chế độ Giao diện Dark/Light
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.SpaceBetween
-                        ) {
-                            Column {
-                                Text(
-                                    text = "Giao diện Tối (Dark Mode)",
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = MaterialTheme.colorScheme.onSurface,
-                                    fontSize = 14.sp
-                                )
-                                Text(
-                                    text = if (state.isDarkTheme) "Đang bật chế độ tối" else "Đang bật chế độ sáng",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
-                            Switch(
-                                checked = state.isDarkTheme,
-                                onCheckedChange = { viewModel.setDarkTheme(it) },
-                                colors = SwitchDefaults.colors(
-                                    checkedThumbColor = Color.White,
-                                    checkedTrackColor = GoldAccent
-                                )
-                            )
-                        }
-                    }
                 }
             }
         }

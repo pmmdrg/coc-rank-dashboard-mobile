@@ -56,7 +56,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         }
         viewModelScope.launch {
             userPreferences.playerTag.collectLatest { tag ->
-                _uiState.update { it.copy(savedPlayerTag = tag) }
+                _uiState.update { state ->
+                    val curSeason = state.season
+                    if (curSeason != null && tag.isNotBlank()) {
+                        val seasonWithTag = curSeason.copy(myPlayerId = tag)
+                        val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
+                        val stats = RankingCalculator.getRankingStats(normalized, tag)
+                        state.copy(
+                            savedPlayerTag = tag,
+                            season = normalized,
+                            stats = stats,
+                            filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+                        )
+                    } else {
+                        state.copy(savedPlayerTag = tag)
+                    }
+                }
             }
         }
         viewModelScope.launch {
@@ -74,14 +89,16 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         viewModelScope.launch {
             repository.latestSeason.collectLatest { season ->
                 if (season != null) {
-                    val normalized = RankingCalculator.normalizeSeason(season)
-                    val stats = RankingCalculator.getRankingStats(normalized)
+                    val activeTag = _uiState.value.savedPlayerTag.ifBlank { season.myPlayerId }
+                    val seasonWithTag = if (activeTag.isNotBlank()) season.copy(myPlayerId = activeTag) else season
+                    val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
+                    val stats = RankingCalculator.getRankingStats(normalized, activeTag)
                     _uiState.update { state ->
                         val changes = if (state.previousPlayers.isNotEmpty()) {
                             RankingCalculator.calculateRankChanges(
                                 currentSeason = normalized,
                                 previousPlayers = state.previousPlayers,
-                                myPlayerTag = state.savedPlayerTag
+                                myPlayerTag = activeTag
                             )
                         } else state.rankChanges
 

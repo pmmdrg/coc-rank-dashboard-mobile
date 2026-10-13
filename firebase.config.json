@@ -2,6 +2,6 @@
     "appId":  "1:337547815951:android:f2f2c3e432ee4fa84c077a",
     "projectId":  "coc-rank-mobile",
     "groups":  "",
-    "testers":  "",
-    "releaseNotes":  "CoC Rank Mobile v1.0.6 - Tối ưu thanh con nhộng nổi không viền đen, chuẩn hóa 3 mục chính (Cá nhân, Mùa giải, Clan) và đồng bộ API endpoint chuẩn theo web"
+    "testers":  "pmmdrg2605@gmail.com",
+    "releaseNotes":  "CoC Rank Mobile v1.0.7 - Thay avatar bằng huy hiệu giải đấu thực tế, loại bỏ cài đặt thừa trên trang cá nhân, sửa hiển thị thứ hạng chính xác và mở rộng khoảng đệm highlight của thanh điều hướng con nhộng"
 }

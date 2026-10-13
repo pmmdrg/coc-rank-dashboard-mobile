@@ -133,17 +133,20 @@ class RankRepository(
                 )
                 if (groupRes.isSuccessful && groupRes.body() != null) {
                     val groupData = groupRes.body()!!
-                    groupData.members.forEach { m ->
+                    val cleanTargetTag = cleanTag.trim().uppercase().removePrefix("#")
+                    groupData.members.forEachIndexed { index, m ->
                         val totalAttacks = m.attackWinCount + m.attackLoseCount
                         val totalDefenses = m.defenseWinCount + m.defenseLoseCount
                         val mTag = m.memberTag
                         val mName = m.memberName
                         val cups = m.memberCups
-                        val isMe = mTag.equals(cleanTag, ignoreCase = true)
+                        val cleanMemberTag = mTag.trim().uppercase().removePrefix("#")
+                        val isMe = cleanTargetTag.isNotBlank() && cleanMemberTag == cleanTargetTag
                         members.add(
                             Player(
                                 id = mTag,
                                 name = mName,
+                                rank = index + 1,
                                 playerTag = mTag,
                                 clanTag = m.memberClanTag,
                                 clanName = m.memberClanName,
@@ -161,12 +164,13 @@ class RankRepository(
                 }
             }
 
-            // Nếu không thuộc bảng đấu cụ thể, tạo danh sách từ dữ liệu người chơi
+            // Nếu không thuộc bảng đấu cụ thể, tạo người chơi ở trạng thái chưa xếp hạng bảng đấu (rank = 0)
             if (members.isEmpty()) {
                 members.add(
                     Player(
                         id = playerData.tag,
                         name = playerData.name,
+                        rank = 0,
                         playerTag = playerData.tag,
                         clanTag = playerData.clan?.tag,
                         clanName = playerData.clan?.name,
@@ -180,10 +184,16 @@ class RankRepository(
 
             val dateFormat = SimpleDateFormat("HH:mm:ss dd/MM", Locale.getDefault())
             val syncedTime = dateFormat.format(Date())
+            val leagueIconUrl = com.cocrank.dashboard.data.LeagueIcons.getLeagueIconUrl(
+                tierName,
+                playerData.leagueTier?.iconUrls?.medium
+                    ?: playerData.leagueTier?.iconUrls?.large
+                    ?: playerData.leagueTier?.iconUrls?.small
+            )
 
             val newSeason = Season(
                 league = tierName,
-                leagueIconUrl = playerData.leagueTier?.iconUrls?.medium,
+                leagueIconUrl = leagueIconUrl,
                 seasonName = "${tierName} - ${SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(Date())}",
                 startsAt = "",
                 endsAt = "",
@@ -247,6 +257,7 @@ class RankRepository(
 
         val season = Season(
             league = "Legend 3",
+            leagueIconUrl = com.cocrank.dashboard.data.LeagueIcons.getLeagueIconUrl("Legend 3"),
             seasonName = "Mùa giải Legend III",
             maxAttacks = 24,
             maxDefenses = 24,
