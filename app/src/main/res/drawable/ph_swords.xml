@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <!-- Phosphor Swords / Battles Icon -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M184,32l40,40l-88,88l-40,-40Z" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M76,140l-20,20l-24,-8l-8,24l20,20l-24,24l16,16l24,-24l20,20l24,-8l-8,-24l20,-20" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M116,80L32,160" />
+</vector>

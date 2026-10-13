@@ -17,8 +17,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Shield
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -33,14 +31,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocrank.dashboard.R
 import com.cocrank.dashboard.domain.model.ClanMember
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
-import com.cocrank.dashboard.ui.theme.DarkBackground
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -80,10 +77,10 @@ fun ClanScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -98,8 +95,12 @@ fun ClanScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(DarkSurface)
-                        .border(1.dp, DarkBorder.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                            RoundedCornerShape(12.dp)
+                        )
                         .padding(16.dp)
                 ) {
                     Row(
@@ -115,7 +116,7 @@ fun ClanScreen(
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
-                                imageVector = Icons.Default.Shield,
+                                painter = painterResource(id = R.drawable.ph_shield),
                                 contentDescription = null,
                                 tint = GoldAccent,
                                 modifier = Modifier.size(28.dp)
@@ -153,8 +154,12 @@ fun ClanScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clip(RoundedCornerShape(10.dp))
-                        .background(DarkSurface)
-                        .border(1.dp, DarkBorder.copy(alpha = 0.5f), RoundedCornerShape(10.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(
+                            1.dp,
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
+                            RoundedCornerShape(10.dp)
+                        )
                         .padding(12.dp)
                 ) {
                     Row(
@@ -170,7 +175,7 @@ fun ClanScreen(
                                 modifier = Modifier
                                     .size(28.dp)
                                     .clip(CircleShape)
-                                    .background(DarkBorder.copy(alpha = 0.4f)),
+                                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(

@@ -17,9 +17,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.SwapVert
-import androidx.compose.material.icons.filled.TrendingUp
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -34,15 +31,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocrank.dashboard.R
 import com.cocrank.dashboard.domain.model.RankChangeItem
 import com.cocrank.dashboard.ui.components.RankDiffBadge
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
-import com.cocrank.dashboard.ui.theme.DarkBackground
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -73,10 +69,10 @@ fun RankChangesScreen(
                         )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { innerPadding ->
         if (changes.isEmpty()) {
@@ -92,7 +88,7 @@ fun RankChangesScreen(
                     modifier = Modifier.padding(24.dp)
                 ) {
                     Icon(
-                        imageVector = Icons.Default.SwapVert,
+                        painter = painterResource(id = R.drawable.ph_chart_line_up),
                         contentDescription = null,
                         tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                         modifier = Modifier.size(48.dp)
@@ -136,10 +132,10 @@ fun RankChangeCard(item: RankChangeItem) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(DarkSurface)
+            .background(MaterialTheme.colorScheme.surface)
             .border(
                 width = if (isMe) 1.5.dp else 1.dp,
-                color = if (isMe) GoldAccent else DarkBorder.copy(alpha = 0.6f),
+                color = if (isMe) GoldAccent else MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
                 shape = RoundedCornerShape(12.dp)
             )
             .padding(14.dp)

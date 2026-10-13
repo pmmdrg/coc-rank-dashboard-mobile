@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <!-- Phosphor Sparkle Icon -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M128,24L152,96L224,120L152,144L128,216L104,144L32,120L104,96Z" />
+</vector>

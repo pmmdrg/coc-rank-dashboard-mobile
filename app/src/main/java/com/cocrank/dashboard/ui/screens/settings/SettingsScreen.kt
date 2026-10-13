@@ -19,6 +19,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
@@ -30,20 +31,16 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
-import com.cocrank.dashboard.ui.theme.DarkBackground
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -52,12 +49,19 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val state by viewModel.uiState.collectAsState()
-    val scope = rememberCoroutineScope()
 
     var playerTag by remember(state.savedPlayerTag) { mutableStateOf(state.savedPlayerTag) }
     var apiToken by remember(state.savedApiToken) { mutableStateOf(state.savedApiToken) }
     var proxyUrl by remember(state.savedProxyUrl) { mutableStateOf(state.savedProxyUrl) }
-    var isDarkTheme by remember { mutableStateOf(true) }
+
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedBorderColor = GoldAccent,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+    )
 
     Scaffold(
         topBar = {
@@ -70,10 +74,10 @@ fun SettingsScreen(
                         color = MaterialTheme.colorScheme.onSurface
                     )
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = DarkBackground)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         },
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -93,7 +97,8 @@ fun SettingsScreen(
                             placeholder = { Text("#90UQRP0") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            colors = textFieldColors
                         )
                         OutlinedTextField(
                             value = apiToken,
@@ -102,7 +107,8 @@ fun SettingsScreen(
                             placeholder = { Text("Nhập token nếu gọi trực tiếp") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            colors = textFieldColors
                         )
                         OutlinedTextField(
                             value = proxyUrl,
@@ -111,7 +117,8 @@ fun SettingsScreen(
                             placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
                             singleLine = true,
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(8.dp)
+                            shape = RoundedCornerShape(8.dp),
+                            colors = textFieldColors
                         )
 
                         Spacer(modifier = Modifier.height(6.dp))
@@ -123,7 +130,7 @@ fun SettingsScreen(
                             colors = ButtonDefaults.buttonColors(containerColor = GoldAccent),
                             modifier = Modifier.fillMaxWidth()
                         ) {
-                            Text("Lưu Thay Đổi", color = DarkSurface, fontWeight = FontWeight.Bold)
+                            Text("Lưu Thay Đổi", color = Color.White, fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -140,18 +147,22 @@ fun SettingsScreen(
                             Text(
                                 text = "Chế độ Gaming Dark Mode",
                                 style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
-                                text = "Giao diện tối màu tương phản cao",
+                                text = if (state.isDarkTheme) "Đang bật giao diện tối" else "Đang bật giao diện sáng",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         Switch(
-                            checked = isDarkTheme,
-                            onCheckedChange = { isDarkTheme = it },
-                            colors = SwitchDefaults.colors(checkedThumbColor = GoldAccent)
+                            checked = state.isDarkTheme,
+                            onCheckedChange = { viewModel.setDarkTheme(it) },
+                            colors = SwitchDefaults.colors(
+                                checkedThumbColor = GoldAccent,
+                                checkedTrackColor = GoldAccent.copy(alpha = 0.3f)
+                            )
                         )
                     }
                 }
@@ -161,7 +172,7 @@ fun SettingsScreen(
                 SettingsSectionCard(title = "Thông Tin Ứng Dụng") {
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
-                            text = "CoC Rank Dashboard Mobile v1.0.0",
+                            text = "CoC Rank Dashboard Mobile v1.0.2",
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
@@ -186,8 +197,12 @@ fun SettingsSectionCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(DarkSurface)
-            .border(1.dp, DarkBorder.copy(alpha = 0.6f), RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                RoundedCornerShape(12.dp)
+            )
             .padding(16.dp)
     ) {
         Column(modifier = Modifier.fillMaxWidth()) {

@@ -27,8 +27,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.cocrank.dashboard.domain.model.Player
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 @Composable
@@ -49,14 +47,10 @@ fun PlayerItemCard(
     val cardBorderColor = if (isMe) {
         GoldAccent
     } else {
-        DarkBorder.copy(alpha = 0.6f)
+        MaterialTheme.colorScheme.outline.copy(alpha = 0.6f)
     }
 
-    val cardBackground = if (isMe) {
-        DarkSurface.copy(alpha = 0.95f)
-    } else {
-        DarkSurface
-    }
+    val cardBackground = MaterialTheme.colorScheme.surface
 
     Box(
         modifier = modifier
@@ -134,7 +128,7 @@ fun PlayerItemCard(
                                 fontSize = 11.sp,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
-                            Text(text = "•", fontSize = 11.sp, color = DarkBorder)
+                            Text(text = "•", fontSize = 11.sp, color = MaterialTheme.colorScheme.outline)
                         }
                         if (!player.playerTag.isNullOrBlank()) {
                             Text(
@@ -188,7 +182,7 @@ fun PlayerItemCard(
                         text = "${player.maxPossibleCups} 🏆",
                         fontSize = 15.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = MaterialTheme.colorScheme.primaryContainer
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -220,7 +214,7 @@ fun PlayerItemCard(
                             .height(5.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = Color(0xFF10B981),
-                        trackColor = DarkBorder.copy(alpha = 0.5f),
+                        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                     )
                 }
 
@@ -244,7 +238,7 @@ fun PlayerItemCard(
                             .height(5.dp)
                             .clip(RoundedCornerShape(3.dp)),
                         color = Color(0xFF0284C7),
-                        trackColor = DarkBorder.copy(alpha = 0.5f),
+                        trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.4f),
                     )
                 }
             }

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <!-- Phosphor ArrowsClockwise Icon -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M224,56v56H168" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M32,200v-56h56" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M60.1,96a80,80 0,0,1 135.8,-13.6L224,112M32,144l28.1,29.6A80,80 0,0,0 195.9,160" />
+</vector>

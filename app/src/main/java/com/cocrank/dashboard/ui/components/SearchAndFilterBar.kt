@@ -9,9 +9,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.Icon
@@ -23,11 +20,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocrank.dashboard.R
 import com.cocrank.dashboard.domain.model.RatingCategory
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 @Composable
@@ -54,7 +51,7 @@ fun SearchAndFilterBar(
             },
             leadingIcon = {
                 Icon(
-                    imageVector = Icons.Default.Search,
+                    painter = painterResource(id = R.drawable.ph_magnifying_glass),
                     contentDescription = null,
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(18.dp)
@@ -64,7 +61,7 @@ fun SearchAndFilterBar(
                 if (query.isNotEmpty()) {
                     IconButton(onClick = { onQueryChange("") }) {
                         Icon(
-                            imageVector = Icons.Default.Close,
+                            painter = painterResource(id = R.drawable.ph_x),
                             contentDescription = "Xóa tìm kiếm",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.size(18.dp)
@@ -75,10 +72,10 @@ fun SearchAndFilterBar(
             singleLine = true,
             shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedContainerColor = DarkSurface,
-                unfocusedContainerColor = DarkSurface,
+                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
                 focusedBorderColor = GoldAccent,
-                unfocusedBorderColor = DarkBorder,
+                unfocusedBorderColor = MaterialTheme.colorScheme.outline,
                 focusedTextColor = MaterialTheme.colorScheme.onSurface,
                 unfocusedTextColor = MaterialTheme.colorScheme.onSurface
             ),
@@ -97,7 +94,14 @@ fun SearchAndFilterBar(
                 label = { Text("Tất cả", fontSize = 12.sp) },
                 colors = FilterChipDefaults.filterChipColors(
                     selectedContainerColor = GoldAccent.copy(alpha = 0.2f),
-                    selectedLabelColor = GoldAccent
+                    selectedLabelColor = GoldAccent,
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                ),
+                border = FilterChipDefaults.filterChipBorder(
+                    enabled = true,
+                    selected = selectedCategory == null,
+                    borderColor = MaterialTheme.colorScheme.outline
                 )
             )
 
@@ -110,7 +114,14 @@ fun SearchAndFilterBar(
                     label = { Text(cat.displayName, fontSize = 12.sp) },
                     colors = FilterChipDefaults.filterChipColors(
                         selectedContainerColor = catColor.copy(alpha = 0.2f),
-                        selectedLabelColor = catColor
+                        selectedLabelColor = catColor,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    border = FilterChipDefaults.filterChipBorder(
+                        enabled = true,
+                        selected = isSelected,
+                        borderColor = MaterialTheme.colorScheme.outline
                     )
                 )
             }

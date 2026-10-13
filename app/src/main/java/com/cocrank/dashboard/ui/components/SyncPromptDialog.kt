@@ -13,6 +13,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -20,10 +21,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 
 @Composable
@@ -38,9 +39,18 @@ fun SyncPromptDialog(
     var apiToken by remember { mutableStateOf(initialApiToken) }
     var proxyUrl by remember { mutableStateOf(initialProxyUrl) }
 
+    val textFieldColors = OutlinedTextFieldDefaults.colors(
+        focusedContainerColor = MaterialTheme.colorScheme.surface,
+        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+        focusedBorderColor = GoldAccent,
+        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+        focusedTextColor = MaterialTheme.colorScheme.onSurface,
+        unfocusedTextColor = MaterialTheme.colorScheme.onSurface
+    )
+
     AlertDialog(
         onDismissRequest = onDismiss,
-        containerColor = DarkSurface,
+        containerColor = MaterialTheme.colorScheme.surface,
         title = {
             Text(
                 text = "Cấu hình Đồng bộ CoC",
@@ -67,7 +77,8 @@ fun SyncPromptDialog(
                     placeholder = { Text("#90UQRP0") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = textFieldColors
                 )
 
                 OutlinedTextField(
@@ -77,7 +88,8 @@ fun SyncPromptDialog(
                     placeholder = { Text("Bearer Token từ developer.clashofclans.com") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = textFieldColors
                 )
 
                 OutlinedTextField(
@@ -87,7 +99,8 @@ fun SyncPromptDialog(
                     placeholder = { Text("https://cocproxy.royaleapi.dev/v1") },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(8.dp),
+                    colors = textFieldColors
                 )
             }
         },
@@ -96,7 +109,7 @@ fun SyncPromptDialog(
                 onClick = { onConfirm(playerTag, apiToken, proxyUrl) },
                 colors = ButtonDefaults.buttonColors(containerColor = GoldAccent)
             ) {
-                Text("Lưu & Đồng bộ", color = DarkSurface, fontWeight = FontWeight.Bold)
+                Text("Lưu & Đồng bộ", color = Color.White, fontWeight = FontWeight.Bold)
             }
         },
         dismissButton = {

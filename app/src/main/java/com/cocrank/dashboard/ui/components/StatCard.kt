@@ -21,27 +21,29 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.cocrank.dashboard.ui.theme.DarkBorder
-import com.cocrank.dashboard.ui.theme.DarkSurface
 
 @Composable
 fun StatCard(
     title: String,
     value: String,
     subtitle: String? = null,
-    icon: ImageVector? = null,
+    iconRes: Int? = null,
     accentColor: Color = MaterialTheme.colorScheme.primary,
     modifier: Modifier = Modifier
 ) {
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(14.dp))
-            .background(DarkSurface)
-            .border(1.dp, DarkBorder.copy(alpha = 0.7f), RoundedCornerShape(14.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(
+                1.dp,
+                MaterialTheme.colorScheme.outline.copy(alpha = 0.7f),
+                RoundedCornerShape(14.dp)
+            )
             .padding(14.dp)
     ) {
         Column(
@@ -58,7 +60,7 @@ fun StatCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     letterSpacing = 0.5.sp
                 )
-                if (icon != null) {
+                if (iconRes != null) {
                     Box(
                         modifier = Modifier
                             .size(28.dp)
@@ -66,7 +68,7 @@ fun StatCard(
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
-                            imageVector = icon,
+                            painter = painterResource(id = iconRes),
                             contentDescription = null,
                             tint = accentColor,
                             modifier = Modifier.size(16.dp)

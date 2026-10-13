@@ -34,7 +34,8 @@ data class DashboardUiState(
     val showConfigDialog: Boolean = false,
     val savedPlayerTag: String = "",
     val savedApiToken: String = "",
-    val savedProxyUrl: String = ""
+    val savedProxyUrl: String = "",
+    val isDarkTheme: Boolean = true
 )
 
 class DashboardViewModel(application: Application) : AndroidViewModel(application) {
@@ -48,6 +49,11 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     init {
         // Observe preferences
+        viewModelScope.launch {
+            userPreferences.isDarkTheme.collectLatest { isDark ->
+                _uiState.update { it.copy(isDarkTheme = isDark) }
+            }
+        }
         viewModelScope.launch {
             userPreferences.playerTag.collectLatest { tag ->
                 _uiState.update { it.copy(savedPlayerTag = tag) }
@@ -191,6 +197,12 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
 
     fun dismissConfigDialog() {
         _uiState.update { it.copy(showConfigDialog = false) }
+    }
+
+    fun setDarkTheme(isDark: Boolean) {
+        viewModelScope.launch {
+            userPreferences.setDarkTheme(isDark)
+        }
     }
 
     fun clearErrorMessage() {

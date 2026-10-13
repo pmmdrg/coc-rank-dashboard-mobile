@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="256"
+    android:viewportHeight="256">
+    <!-- Phosphor Gear Icon -->
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M128,128m-40,0a40,40 0,1,1 80,0a40,40 0,1,1 -80,0" />
+    <path
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="18"
+        android:strokeLineCap="round"
+        android:strokeLineJoin="round"
+        android:pathData="M128,32v24m0,144v24m96,-96h-24m-144,0H32m135.8,-57.8l-17,17m-45.6,45.6l-17,17m0,-79.6l17,17m45.6,45.6l17,17" />
+</vector>

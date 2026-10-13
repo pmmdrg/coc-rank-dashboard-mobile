@@ -16,14 +16,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.TrendingDown
-import androidx.compose.material.icons.filled.EmojiEvents
-import androidx.compose.material.icons.filled.Group
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Security
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.SportsScore
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -45,15 +37,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.cocrank.dashboard.R
 import com.cocrank.dashboard.ui.components.PlayerItemCard
 import com.cocrank.dashboard.ui.components.SearchAndFilterBar
 import com.cocrank.dashboard.ui.components.StatCard
 import com.cocrank.dashboard.ui.components.SyncPromptDialog
-import com.cocrank.dashboard.ui.theme.DarkBackground
-import com.cocrank.dashboard.ui.theme.DarkSurface
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
 import com.cocrank.dashboard.ui.theme.PurpleDominant
@@ -136,7 +128,7 @@ fun DashboardScreen(
                             )
                         } else {
                             Icon(
-                                imageVector = Icons.Default.Refresh,
+                                painter = painterResource(id = R.drawable.ph_arrows_clockwise),
                                 contentDescription = "Đồng bộ API",
                                 tint = GoldAccent
                             )
@@ -144,18 +136,18 @@ fun DashboardScreen(
                     }
                     IconButton(onClick = { viewModel.openConfigDialog() }) {
                         Icon(
-                            imageVector = Icons.Default.Settings,
+                            painter = painterResource(id = R.drawable.ph_gear),
                             contentDescription = "Cấu hình",
                             tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = DarkBackground
+                    containerColor = MaterialTheme.colorScheme.background
                 )
             )
         },
-        containerColor = DarkBackground,
+        containerColor = MaterialTheme.colorScheme.background,
         modifier = modifier
     ) { innerPadding ->
         LazyColumn(
@@ -186,7 +178,7 @@ fun DashboardScreen(
                             subtitle = if (my?.rankDiff != null && my.rankDiff != 0) {
                                 if (my.rankDiff > 0) "Tăng ${my.rankDiff} bậc" else "Hạ ${-my.rankDiff} bậc"
                             } else "Chưa đổi",
-                            icon = Icons.Default.EmojiEvents,
+                            iconRes = R.drawable.ph_trophy,
                             accentColor = GoldAccent,
                             modifier = Modifier.weight(1f)
                         )
@@ -194,7 +186,7 @@ fun DashboardScreen(
                             title = "Cúp hiện tại",
                             value = if (my != null) "${my.currentCups} 🏆" else "--",
                             subtitle = my?.rating?.displayName ?: "Chưa xếp loại",
-                            icon = Icons.Default.SportsScore,
+                            iconRes = R.drawable.ph_sparkle,
                             accentColor = GreenSuperior,
                             modifier = Modifier.weight(1f)
                         )
@@ -209,7 +201,7 @@ fun DashboardScreen(
                             title = "Cúp tối đa",
                             value = if (my != null) "${my.maxPossibleCups} 🏆" else "--",
                             subtitle = "Giả định toàn thắng & thủ 40c",
-                            icon = Icons.Default.Security,
+                            iconRes = R.drawable.ph_shield,
                             accentColor = Color(0xFF38BDF8),
                             modifier = Modifier.weight(1f)
                         )
@@ -217,7 +209,7 @@ fun DashboardScreen(
                             title = "Rank thấp nhất",
                             value = if (stats != null && stats.lowestPossibleRank > 0) "#${stats.lowestPossibleRank}" else "--",
                             subtitle = "Dự đoán trường hợp xấu nhất",
-                            icon = Icons.AutoMirrored.Filled.TrendingDown,
+                            iconRes = R.drawable.ph_trend_down,
                             accentColor = RedAlarm,
                             modifier = Modifier.weight(1f)
                         )
@@ -232,7 +224,7 @@ fun DashboardScreen(
                             title = "Có thể vượt bạn",
                             value = "${stats?.playersWhoCanPassMe ?: 0} người",
                             subtitle = "${stats?.playersDefinitelyBelowMe ?: 0} chắc chắn xếp dưới",
-                            icon = Icons.Default.Group,
+                            iconRes = R.drawable.ph_users,
                             accentColor = Color(0xFFA855F7),
                             modifier = Modifier.weight(1f)
                         )
@@ -240,6 +232,7 @@ fun DashboardScreen(
                             title = "Lượt đánh / thủ",
                             value = if (my != null) "${my.attacks}/${season?.maxAttacks ?: 24}" else "--",
                             subtitle = if (my != null) "Đã thủ: ${my.defenses}/${season?.maxDefenses ?: 24}" else "",
+                            iconRes = R.drawable.ph_swords,
                             accentColor = Color(0xFFF97316),
                             modifier = Modifier.weight(1f)
                         )

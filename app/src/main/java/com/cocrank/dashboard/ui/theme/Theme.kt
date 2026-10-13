@@ -1,12 +1,12 @@
 package com.cocrank.dashboard.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
@@ -28,24 +28,24 @@ private val DarkColorScheme = darkColorScheme(
 )
 
 private val LightColorScheme = lightColorScheme(
-    primary = GoldAccent,
-    onPrimary = LightSurface,
-    primaryContainer = LightSurfaceVariant,
-    onPrimaryContainer = LightTextPrimary,
+    primary = Color(0xFFD97706),
+    onPrimary = Color.White,
+    primaryContainer = Color(0xFFFEF3C7),
+    onPrimaryContainer = Color(0xFF92400E),
     secondary = PurpleDominant,
-    background = LightBackground,
-    surface = LightSurface,
-    surfaceVariant = LightSurfaceVariant,
-    onBackground = LightTextPrimary,
-    onSurface = LightTextPrimary,
-    onSurfaceVariant = LightTextSecondary,
-    outline = LightBorder,
+    background = Color(0xFFF8FAFC),
+    surface = Color(0xFFFFFFFF),
+    surfaceVariant = Color(0xFFF1F5F9),
+    onBackground = Color(0xFF0F172A),
+    onSurface = Color(0xFF0F172A),
+    onSurfaceVariant = Color(0xFF64748B),
+    outline = Color(0xFFE2E8F0),
     error = RedAlarm
 )
 
 @Composable
 fun CoCRankTheme(
-    darkTheme: Boolean = true, // Ưu tiên Dark Theme phong cách game
+    darkTheme: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme
