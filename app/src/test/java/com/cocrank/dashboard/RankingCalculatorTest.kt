@@ -99,4 +99,71 @@ class RankingCalculatorTest {
         assertEquals(0, stats.playersWhoCanPassMe)
         assertEquals(1, stats.lowestPossibleRank)
     }
+
+    @Test
+    fun testPromotionAndDemotionRules() {
+        // Electro 33: 15 promotion, 15 demotion
+        val electroRules = com.cocrank.dashboard.data.RankedTierMetadata.getPromotionAndDemotionCount("Electro League 33", 105000033L)
+        assertEquals(15, electroRules.first)
+        assertEquals(15, electroRules.second)
+
+        // Legend 3: 5 promotion, 15 demotion
+        val legend3Rules = com.cocrank.dashboard.data.RankedTierMetadata.getPromotionAndDemotionCount("Legend III", 105000034L)
+        assertEquals(5, legend3Rules.first)
+        assertEquals(15, legend3Rules.second)
+
+        // Legend 2: 5 promotion, 15 demotion
+        val legend2Rules = com.cocrank.dashboard.data.RankedTierMetadata.getPromotionAndDemotionCount("Legend II", 105000035L)
+        assertEquals(5, legend2Rules.first)
+        assertEquals(15, legend2Rules.second)
+
+        // Legend 1: 0 promotion, 15 demotion
+        val legend1Rules = com.cocrank.dashboard.data.RankedTierMetadata.getPromotionAndDemotionCount("Legend I", 105000036L)
+        assertEquals(0, legend1Rules.first)
+        assertEquals(15, legend1Rules.second)
+    }
+
+    @Test
+    fun testFindBestRankAndCupsByHighestTier() {
+        val history = listOf(
+            // Season 1: Electro 33 (tier 33), Rank #1, 3200 trophies
+            com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+                leagueSeasonId = 1,
+                leagueTierId = 105000033L,
+                tierName = "Electro League 33",
+                placement = 1,
+                leagueTrophies = 3200
+            ),
+            // Season 2: Legend 3 (tier 34), Rank #80, 2500 trophies
+            com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+                leagueSeasonId = 2,
+                leagueTierId = 105000034L,
+                tierName = "Legend III",
+                placement = 80,
+                leagueTrophies = 2500
+            ),
+            // Season 3: Legend 3 (tier 34), Rank #25, 2700 trophies
+            com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+                leagueSeasonId = 3,
+                leagueTierId = 105000034L,
+                tierName = "Legend III",
+                placement = 25,
+                leagueTrophies = 2700
+            )
+        )
+
+        val bestRank = RankingCalculator.findBestRankSeason(history)
+        // Legend 3 (tier 34) > Electro 33 (tier 33)
+        // Between season 2 (#80) and season 3 (#25), #25 is better!
+        assertEquals(3L, bestRank?.leagueSeasonId)
+        assertEquals(25, bestRank?.placement)
+        assertEquals("Legend III", bestRank?.tierName)
+
+        val bestCups = RankingCalculator.findBestCupsSeason(history)
+        // Legend 3 (tier 34) > Electro 33 (tier 33)
+        // Between season 2 (2500) and season 3 (2700), 2700 is higher!
+        assertEquals(3L, bestCups?.leagueSeasonId)
+        assertEquals(2700, bestCups?.leagueTrophies)
+        assertEquals("Legend III", bestCups?.tierName)
+    }
 }

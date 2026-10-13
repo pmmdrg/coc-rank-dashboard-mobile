@@ -335,6 +335,7 @@ class RankRepository(
                             )
                         }
                         val currentPeriod = parseSeasonDateRange(currentSeasonId)
+                        val (currentPromo, currentDemo) = RankedTierMetadata.getPromotionAndDemotionCount(tierName, playerData.leagueTier?.id)
                         val members = mapMembersToPlayers(
                             groupData.members,
                             cleanTargetTag,
@@ -351,8 +352,8 @@ class RankRepository(
                             endsAt = currentPeriod.endsAt,
                             maxAttacks = maxAttacks,
                             maxDefenses = maxAttacks,
-                            promotionCount = 2,
-                            demotionCount = 1,
+                            promotionCount = currentPromo,
+                            demotionCount = currentDemo,
                             myPlayerId = cleanTag,
                             players = members,
                             attackLogs = attackBattleLogs,
@@ -416,6 +417,7 @@ class RankRepository(
                             prevAttackLogs,
                             prevDefenseLogs
                         )
+                        val (prevPromo, prevDemo) = RankedTierMetadata.getPromotionAndDemotionCount(prevTierName, prevHistItem?.leagueTierId)
                         builtPreviousSeason = Season(
                             league = prevTierName,
                             leagueIconUrl = LeagueIcons.getLeagueIconUrl(prevTierName),
@@ -424,8 +426,8 @@ class RankRepository(
                             endsAt = prevPeriod.endsAt,
                             maxAttacks = prevMaxAttacks,
                             maxDefenses = prevMaxAttacks,
-                            promotionCount = 2,
-                            demotionCount = 1,
+                            promotionCount = prevPromo,
+                            demotionCount = prevDemo,
                             myPlayerId = cleanTag,
                             players = prevMembers,
                             attackLogs = prevAttackLogs,
@@ -455,6 +457,7 @@ class RankRepository(
                     currentCups = playerData.trophies,
                     isMe = true
                 )
+                val (fallbackPromo, fallbackDemo) = RankedTierMetadata.getPromotionAndDemotionCount(tierName, playerData.leagueTier?.id)
                 Season(
                     league = tierName,
                     leagueIconUrl = leagueIconUrl,
@@ -463,8 +466,8 @@ class RankRepository(
                     endsAt = "",
                     maxAttacks = maxAttacks,
                     maxDefenses = maxAttacks,
-                    promotionCount = 2,
-                    demotionCount = 1,
+                    promotionCount = fallbackPromo,
+                    demotionCount = fallbackDemo,
                     myPlayerId = cleanTag,
                     players = listOf(singlePlayer),
                     leagueGroupTag = currentGroupTag,
@@ -673,8 +676,8 @@ class RankRepository(
             seasonName = "Mùa giải Legend III",
             maxAttacks = 24,
             maxDefenses = 24,
-            promotionCount = 2,
-            demotionCount = 1,
+            promotionCount = 5,
+            demotionCount = 15,
             myPlayerId = myTag,
             players = samplePlayers,
             lastSyncedAt = "Vừa khởi tạo (Mẫu)",

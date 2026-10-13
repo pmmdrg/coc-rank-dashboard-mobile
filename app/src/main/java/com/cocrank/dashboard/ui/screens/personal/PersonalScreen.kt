@@ -60,6 +60,7 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.cocrank.dashboard.R
 import com.cocrank.dashboard.data.LeagueIcons
+import com.cocrank.dashboard.domain.usecase.RankingCalculator
 import com.cocrank.dashboard.ui.components.RatingBadge
 import com.cocrank.dashboard.ui.components.StatCard
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
@@ -508,9 +509,8 @@ fun PersonalScreen(
             // Section 3: THEO DÕI PHONG ĐỘ & KỶ LỤC (Performance Trend & Records)
             item {
                 val leagueHistory = state.leagueHistory
-                val validPlacementItems = leagueHistory.filter { it.placement > 0 }
-                val bestRankItem = validPlacementItems.minByOrNull { it.placement }
-                val bestCupsItem = leagueHistory.maxByOrNull { it.leagueTrophies }
+                val bestRankItem = RankingCalculator.findBestRankSeason(leagueHistory)
+                val bestCupsItem = RankingCalculator.findBestCupsSeason(leagueHistory)
                 val latestSeasonItem = leagueHistory.maxByOrNull { it.leagueSeasonId }
 
                 val totalWins = leagueHistory.sumOf { it.attackWins }

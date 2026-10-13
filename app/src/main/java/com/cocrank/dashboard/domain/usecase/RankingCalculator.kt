@@ -1,6 +1,8 @@
 package com.cocrank.dashboard.domain.usecase
 
+import com.cocrank.dashboard.data.RankedTierMetadata
 import com.cocrank.dashboard.domain.model.AttackStatusCategory
+import com.cocrank.dashboard.domain.model.LeagueHistoryItem
 import com.cocrank.dashboard.domain.model.Player
 import com.cocrank.dashboard.domain.model.RankChangeItem
 import com.cocrank.dashboard.domain.model.RankChangesSnapshot
@@ -255,5 +257,45 @@ object RankingCalculator {
             previousUpdatedAt = previousUpdatedAt,
             changes = changes
         )
+    }
+
+    /**
+     * Kỷ lục thứ hạng: Ưu tiên giải đấu cấp cao hơn trước (tierNumber cao hơn),
+     * sau đó mới đến thứ hạng (#1 tốt hơn #80).
+     */
+    fun findBestRankSeason(history: List<LeagueHistoryItem>): LeagueHistoryItem? {
+        val validSeasons = history.filter { it.placement > 0 }
+        return validSeasons.reduceOrNull { best, cur ->
+            val curTier = RankedTierMetadata.getTierNumber(cur.leagueTierId, cur.tierName)
+            val bestTier = RankedTierMetadata.getTierNumber(best.leagueTierId, best.tierName)
+            when {
+                curTier > bestTier -> cur
+                curTier < bestTier -> best
+                cur.placement < best.placement -> cur
+                cur.placement > best.placement -> best
+                cur.leagueTrophies >= best.leagueTrophies -> cur
+                else -> best
+            }
+        } ?: history.firstOrNull()
+    }
+
+    /**
+     * Kỷ lục cúp: Ưu tiên giải đấu cấp cao hơn trước (tierNumber cao hơn),
+     * sau đó mới đến số cúp (nhiều hơn tốt hơn).
+     */
+    fun findBestCupsSeason(history: List<LeagueHistoryItem>): LeagueHistoryItem? {
+        if (history.isEmpty()) return null
+        return history.reduce { best, cur ->
+            val curTier = RankedTierMetadata.getTierNumber(cur.leagueTierId, cur.tierName)
+            val bestTier = RankedTierMetadata.getTierNumber(best.leagueTierId, best.tierName)
+            when {
+                curTier > bestTier -> cur
+                curTier < bestTier -> best
+                cur.leagueTrophies > best.leagueTrophies -> cur
+                cur.leagueTrophies < best.leagueTrophies -> best
+                cur.placement <= best.placement -> cur
+                else -> best
+            }
+        }
     }
 }

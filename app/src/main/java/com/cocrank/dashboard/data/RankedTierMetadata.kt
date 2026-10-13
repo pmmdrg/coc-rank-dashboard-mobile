@@ -103,4 +103,59 @@ object RankedTierMetadata {
         }
         return "Cấp bậc #$tierId"
     }
+
+    fun getTierNumber(tierId: Long?, leagueName: String? = null): Int {
+        if (tierId != null && tierId > 0) {
+            val tier = TIERS.find { it.id == tierId || it.tierNumber.toLong() == tierId }
+            if (tier != null) return tier.tierNumber
+            if (tierId in 105000001L..105000036L) {
+                return (tierId - 105000000L).toInt()
+            }
+        }
+        if (!leagueName.isNullOrBlank()) {
+            val normalized = leagueName.lowercase()
+            val found = TIERS.firstOrNull {
+                normalized.contains(it.name.lowercase()) ||
+                normalized.contains(it.group.lowercase())
+            }
+            if (found != null) return found.tierNumber
+            when {
+                normalized.contains("legend 1") || (normalized.contains("legend i") && !normalized.contains("legend ii") && !normalized.contains("legend iii")) -> return 36
+                normalized.contains("legend 2") || normalized.contains("legend ii") -> return 35
+                normalized.contains("legend 3") || normalized.contains("legend iii") || normalized.contains("legend") -> return 34
+                normalized.contains("electro 33") -> return 33
+                normalized.contains("electro 32") -> return 32
+                normalized.contains("electro 31") -> return 31
+                normalized.contains("electro") -> return 33
+            }
+        }
+        return 0
+    }
+
+    /**
+     * Quy tắc thăng hạng và xuống hạng theo từng cấp bậc:
+     * - Legend 1 (Tier 36): Đỉnh bảng xếp hạng, không thể thăng hạng tiếp (0), 15 xuống hạng
+     * - Legend 2 & Legend 3 (Tier 34-35): Top 5 thăng hạng, Top 15 xuống hạng
+     * - Electro 31, 32, 33 (Tier 31-33): Top 15 thăng hạng, Top 15 xuống hạng
+     * - Mặc định các giải đấu khác: Top 15 thăng hạng, Top 15 xuống hạng
+     */
+    fun getPromotionAndDemotionCount(leagueName: String?, tierId: Long? = null): Pair<Int, Int> {
+        val tierNum = getTierNumber(tierId, leagueName)
+        return when {
+            tierNum == 36 -> Pair(0, 15)
+            tierNum in 34..35 -> Pair(5, 15)
+            tierNum in 31..33 -> Pair(15, 15)
+            leagueName != null -> {
+                val lower = leagueName.lowercase()
+                when {
+                    lower.contains("legend 1") || (lower.contains("legend i") && !lower.contains("legend ii") && !lower.contains("legend iii")) -> Pair(0, 15)
+                    lower.contains("legend 2") || lower.contains("legend ii") -> Pair(5, 15)
+                    lower.contains("legend 3") || lower.contains("legend iii") || lower.contains("legend") -> Pair(5, 15)
+                    lower.contains("electro") -> Pair(15, 15)
+                    else -> Pair(15, 15)
+                }
+            }
+            else -> Pair(15, 15)
+        }
+    }
 }
