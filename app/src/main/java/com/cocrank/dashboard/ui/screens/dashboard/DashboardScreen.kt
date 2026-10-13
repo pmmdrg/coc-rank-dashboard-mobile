@@ -1,12 +1,15 @@
 package com.cocrank.dashboard.ui.screens.dashboard
 
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
+import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -25,6 +28,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -52,6 +56,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -160,29 +165,38 @@ fun DashboardScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
             // Bộ chọn Mùa giải (Current Season / Previous Season)
-            if (state.allSeasons.size > 1) {
+            val hasMultipleSeasons = state.allSeasons.size > 1 || (state.currentSeason != null && state.previousSeason != null)
+            if (hasMultipleSeasons) {
                 item {
                     val activeIndex = state.activeSeasonIndex
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(MaterialTheme.colorScheme.surface)
-                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                            .liquidGlass(shape = RoundedCornerShape(12.dp))
                             .padding(4.dp),
                         horizontalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        state.allSeasons.forEachIndexed { idx, _ ->
+                        val seasonTabs = listOf("Mùa giải hiện tại", "Mùa giải trước đó")
+                        seasonTabs.forEachIndexed { idx, label ->
                             val isSelected = activeIndex == idx
-                            val label = if (idx == 0) "Mùa giải hiện tại" else "Mùa giải trước đó"
+                            val animBgColor by animateColorAsState(
+                                targetValue = if (isSelected) GoldAccent.copy(alpha = 0.22f) else Color.Transparent,
+                                animationSpec = tween(250),
+                                label = "tab_bg_$idx"
+                            )
+                            val animBorderColor by animateColorAsState(
+                                targetValue = if (isSelected) GoldAccent.copy(alpha = 0.6f) else Color.Transparent,
+                                animationSpec = tween(250),
+                                label = "tab_border_$idx"
+                            )
                             Box(
                                 modifier = Modifier
                                     .weight(1f)
                                     .clip(RoundedCornerShape(8.dp))
-                                    .background(if (isSelected) GoldAccent.copy(alpha = 0.18f) else Color.Transparent)
+                                    .background(animBgColor)
                                     .border(
                                         width = if (isSelected) 1.dp else 0.dp,
-                                        color = if (isSelected) GoldAccent.copy(alpha = 0.5f) else Color.Transparent,
+                                        color = animBorderColor,
                                         shape = RoundedCornerShape(8.dp)
                                     )
                                     .clickable { viewModel.selectSeasonIndex(idx) }
@@ -674,21 +688,88 @@ fun DashboardScreen(
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         letterSpacing = 0.5.sp
                     )
-                    Text(
-                        text = "${state.filteredPlayers.size} người chơi",
-                        fontSize = 12.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    AnimatedContent(
+                        targetState = state.filteredPlayers.size,
+                        transitionSpec = {
+                            fadeIn(animationSpec = tween(220)) togetherWith
+                                fadeOut(animationSpec = tween(220))
+                        },
+                        label = "player_count_anim"
+                    ) { count ->
+                        Text(
+                            text = "$count người chơi",
+                            fontSize = 12.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
-            // Danh sách người chơi
-            items(state.filteredPlayers, key = { it.id }) { player ->
-                PlayerItemCard(
-                    player = player,
-                    maxAttacks = season?.maxAttacks ?: 24,
-                    maxDefenses = season?.maxDefenses ?: 24
-                )
+            // Danh sách người chơi hoặc thông báo chưa có người chơi phù hợp
+            if (state.filteredPlayers.isEmpty()) {
+                item(key = "empty_players_filtered_card") {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .animateItem()
+                            .liquidGlass(shape = RoundedCornerShape(16.dp))
+                            .padding(28.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    painter = painterResource(id = R.drawable.ph_magnifying_glass),
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                            Text(
+                                text = "Chưa có người chơi phù hợp",
+                                style = MaterialTheme.typography.titleSmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            val query = state.searchQuery
+                            val category = state.selectedCategory
+                            val filterHint = when {
+                                query.isNotBlank() && category != null ->
+                                    "Không tìm thấy người chơi có tên/mã \"$query\" với đánh giá \"${category.displayName}\""
+                                query.isNotBlank() ->
+                                    "Không tìm thấy người chơi nào khớp với từ khóa \"$query\""
+                                category != null ->
+                                    "Không có người chơi nào thuộc nhóm đánh giá \"${category.displayName}\""
+                                else ->
+                                    "Hiện chưa có dữ liệu bảng đấu người chơi nào"
+                            }
+                            Text(
+                                text = filterHint,
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = TextAlign.Center
+                            )
+                        }
+                    }
+                }
+            } else {
+                items(state.filteredPlayers, key = { it.id }) { player ->
+                    PlayerItemCard(
+                        player = player,
+                        maxAttacks = season?.maxAttacks ?: 24,
+                        maxDefenses = season?.maxDefenses ?: 24,
+                        modifier = Modifier.animateItem()
+                    )
+                }
             }
         }
     }

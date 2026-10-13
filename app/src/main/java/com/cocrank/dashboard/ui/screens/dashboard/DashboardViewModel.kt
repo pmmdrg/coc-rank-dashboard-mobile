@@ -79,9 +79,21 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                         val seasonWithTag = curSeason.copy(myPlayerId = tag)
                         val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
                         val stats = RankingCalculator.getRankingStats(normalized, tag)
+
+                        val currentWithTag = state.currentSeason?.let {
+                            RankingCalculator.normalizeSeason(it.copy(myPlayerId = tag))
+                        }
+                        val previousWithTag = state.previousSeason?.let {
+                            RankingCalculator.normalizeSeason(it.copy(myPlayerId = tag))
+                        }
+                        val all = listOfNotNull(currentWithTag, previousWithTag).ifEmpty { state.allSeasons }
+
                         state.copy(
                             savedPlayerTag = tag,
                             season = normalized,
+                            currentSeason = currentWithTag ?: state.currentSeason,
+                            previousSeason = previousWithTag ?: state.previousSeason,
+                            allSeasons = all,
                             stats = stats,
                             filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
                         )
@@ -134,9 +146,22 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                     try {
                         val cachedPrev = gson.fromJson(json, Season::class.java)
                         _uiState.update { state ->
-                            val cur = state.season ?: state.currentSeason
-                            val all = listOfNotNull(cur, cachedPrev)
-                            state.copy(previousSeason = cachedPrev, allSeasons = all)
+                            val current = state.currentSeason ?: (if (state.activeSeasonIndex == 0) state.season else null)
+                            val all = listOfNotNull(current, cachedPrev)
+                            val displayed = if (state.activeSeasonIndex == 1) cachedPrev else (current ?: state.season ?: cachedPrev)
+                            val tag = state.savedPlayerTag.ifBlank { displayed.myPlayerId }
+                            val displayedWithTag = if (tag.isNotBlank()) displayed.copy(myPlayerId = tag) else displayed
+                            val normalized = RankingCalculator.normalizeSeason(displayedWithTag)
+                            val stats = RankingCalculator.getRankingStats(normalized, tag)
+
+                            state.copy(
+                                previousSeason = cachedPrev,
+                                currentSeason = current ?: state.currentSeason,
+                                allSeasons = all,
+                                season = normalized,
+                                stats = stats,
+                                filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+                            )
                         }
                     } catch (_: Exception) {}
                 }
@@ -146,7 +171,30 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         // Observe activeSeasonIndex
         viewModelScope.launch {
             userPreferences.activeSeasonIndex.collectLatest { idx ->
-                _uiState.update { it.copy(activeSeasonIndex = idx) }
+                _uiState.update { state ->
+                    if (state.activeSeasonIndex == idx && state.season != null) return@update state
+                    val target = when (idx) {
+                        0 -> state.currentSeason ?: state.allSeasons.getOrNull(0)
+                        1 -> state.previousSeason ?: state.allSeasons.getOrNull(1)
+                        else -> state.allSeasons.getOrNull(idx)
+                    }
+                    if (target == null) {
+                        state.copy(activeSeasonIndex = idx)
+                    } else {
+                        val tag = state.savedPlayerTag.ifBlank { target.myPlayerId }
+                        val seasonWithTag = if (tag.isNotBlank()) target.copy(myPlayerId = tag) else target
+                        val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
+                        val stats = RankingCalculator.getRankingStats(normalized, tag)
+                        val all = listOfNotNull(state.currentSeason, state.previousSeason).ifEmpty { state.allSeasons }
+                        state.copy(
+                            activeSeasonIndex = idx,
+                            season = normalized,
+                            allSeasons = all,
+                            stats = stats,
+                            filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+                        )
+                    }
+                }
             }
         }
 
@@ -189,27 +237,32 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 if (season != null) {
                     val activeTag = _uiState.value.savedPlayerTag.ifBlank { season.myPlayerId }
                     val seasonWithTag = if (activeTag.isNotBlank()) season.copy(myPlayerId = activeTag) else season
-                    val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
-                    val stats = RankingCalculator.getRankingStats(normalized, activeTag)
+                    val normalizedCurrent = RankingCalculator.normalizeSeason(seasonWithTag)
                     _uiState.update { state ->
                         val changes = if (state.previousPlayers.isNotEmpty()) {
                             RankingCalculator.calculateRankChanges(
-                                currentSeason = normalized,
+                                currentSeason = normalizedCurrent,
                                 previousPlayers = state.previousPlayers,
                                 myPlayerTag = activeTag
                             )
                         } else state.rankChanges
 
-                        val all = listOfNotNull(normalized, state.previousSeason)
-                        val displayed = if (state.activeSeasonIndex == 1 && state.previousSeason != null) state.previousSeason else normalized
+                        val all = listOfNotNull(normalizedCurrent, state.previousSeason)
+                        val displayed = if (state.activeSeasonIndex == 1 && state.previousSeason != null) {
+                            state.previousSeason
+                        } else {
+                            normalizedCurrent
+                        }
+                        val displayedWithTag = if (activeTag.isNotBlank()) displayed.copy(myPlayerId = activeTag) else displayed
+                        val normalizedDisplayed = RankingCalculator.normalizeSeason(displayedWithTag)
 
                         state.copy(
-                            season = displayed,
-                            currentSeason = normalized,
+                            season = normalizedDisplayed,
+                            currentSeason = normalizedCurrent,
                             allSeasons = all,
-                            stats = RankingCalculator.getRankingStats(displayed, activeTag),
+                            stats = RankingCalculator.getRankingStats(normalizedDisplayed, activeTag),
                             rankChanges = changes,
-                            filteredPlayers = filterPlayers(displayed.players, state.searchQuery, state.selectedCategory)
+                            filteredPlayers = filterPlayers(normalizedDisplayed.players, state.searchQuery, state.selectedCategory)
                         )
                     }
                 }
@@ -229,23 +282,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
      * Chọn mùa giải hiển thị: 0 (Mùa hiện tại), 1 (Mùa trước đó)
      */
     fun selectSeasonIndex(index: Int) {
-        val all = _uiState.value.allSeasons
-        if (index in all.indices) {
-            val target = all[index]
-            val tag = _uiState.value.savedPlayerTag.ifBlank { target.myPlayerId }
-            val normalized = RankingCalculator.normalizeSeason(target)
+        _uiState.update { state ->
+            val target = when (index) {
+                0 -> state.currentSeason ?: state.allSeasons.getOrNull(0)
+                1 -> state.previousSeason ?: state.allSeasons.getOrNull(1)
+                else -> state.allSeasons.getOrNull(index)
+            } ?: return@update state
+
+            val tag = state.savedPlayerTag.ifBlank { target.myPlayerId }
+            val seasonWithTag = if (tag.isNotBlank()) target.copy(myPlayerId = tag) else target
+            val normalized = RankingCalculator.normalizeSeason(seasonWithTag)
             val stats = RankingCalculator.getRankingStats(normalized, tag)
-            _uiState.update { state ->
-                state.copy(
-                    activeSeasonIndex = index,
-                    season = normalized,
-                    stats = stats,
-                    filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
-                )
-            }
-            viewModelScope.launch {
-                userPreferences.saveActiveSeasonIndex(index)
-            }
+            val all = listOfNotNull(state.currentSeason, state.previousSeason).ifEmpty { state.allSeasons }
+
+            state.copy(
+                activeSeasonIndex = index,
+                season = normalized,
+                allSeasons = all,
+                stats = stats,
+                filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+            )
+        }
+        viewModelScope.launch {
+            userPreferences.saveActiveSeasonIndex(index)
         }
     }
 
@@ -284,7 +343,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     }
 
     fun syncData() {
-        val currentSeason = _uiState.value.season ?: _uiState.value.currentSeason
+        val currentSeason = _uiState.value.currentSeason ?: _uiState.value.season
         val currentPlayers = currentSeason?.players ?: emptyList()
         if (currentPlayers.isNotEmpty()) {
             _uiState.update { it.copy(previousPlayers = currentPlayers) }
@@ -310,25 +369,29 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             result.onSuccess { syncRes ->
                 val prev = _uiState.value.previousPlayers
                 val activeIndex = _uiState.value.activeSeasonIndex
-                val displayedSeason = if (activeIndex in syncRes.allSeasons.indices) syncRes.allSeasons[activeIndex] else syncRes.currentSeason
+                val displayedSeason = if (activeIndex == 1 && syncRes.previousSeason != null) syncRes.previousSeason else syncRes.currentSeason
                 val changes = RankingCalculator.calculateRankChanges(
-                    currentSeason = displayedSeason,
+                    currentSeason = syncRes.currentSeason,
                     previousPlayers = prev,
                     myPlayerTag = tag
                 )
                 userPreferences.saveRankChangesJson(gson.toJson(changes))
 
+                val tagToUse = tag.ifBlank { displayedSeason.myPlayerId }
+                val seasonWithTag = if (tagToUse.isNotBlank()) displayedSeason.copy(myPlayerId = tagToUse) else displayedSeason
+                val normalizedDisplayed = RankingCalculator.normalizeSeason(seasonWithTag)
+
                 _uiState.update {
                     it.copy(
-                        season = displayedSeason,
+                        season = normalizedDisplayed,
                         currentSeason = syncRes.currentSeason,
                         previousSeason = syncRes.previousSeason,
                         allSeasons = syncRes.allSeasons,
-                        stats = RankingCalculator.getRankingStats(displayedSeason, tag),
+                        stats = RankingCalculator.getRankingStats(normalizedDisplayed, tagToUse),
                         clanData = syncRes.clanData ?: it.clanData,
                         leagueHistory = if (syncRes.leagueHistory.isNotEmpty()) syncRes.leagueHistory else it.leagueHistory,
                         rankChanges = changes,
-                        filteredPlayers = filterPlayers(displayedSeason.players, it.searchQuery, it.selectedCategory),
+                        filteredPlayers = filterPlayers(normalizedDisplayed.players, it.searchQuery, it.selectedCategory),
                         isSyncing = false,
                         syncMessage = null,
                         errorMessage = null
