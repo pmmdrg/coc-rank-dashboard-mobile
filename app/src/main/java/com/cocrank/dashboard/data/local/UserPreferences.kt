@@ -19,6 +19,10 @@ class UserPreferences(private val context: Context) {
         val KEY_API_TOKEN = stringPreferencesKey("api_token")
         val KEY_PROXY_URL = stringPreferencesKey("proxy_url")
         val KEY_IS_DARK_THEME = booleanPreferencesKey("is_dark_theme")
+        val KEY_CLAN_DATA_JSON = stringPreferencesKey("clan_data_json")
+        val KEY_LEAGUE_HISTORY_JSON = stringPreferencesKey("league_history_json")
+        val KEY_PREVIOUS_SEASON_JSON = stringPreferencesKey("previous_season_json")
+        val KEY_ACTIVE_SEASON_INDEX = androidx.datastore.preferences.core.intPreferencesKey("active_season_index")
     }
 
     val playerTag: Flow<String> = context.dataStore.data.map { preferences ->
@@ -35,6 +39,22 @@ class UserPreferences(private val context: Context) {
 
     val isDarkTheme: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[KEY_IS_DARK_THEME] ?: true // Mặc định là Dark Theme đậm chất gaming
+    }
+
+    val clanDataJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_CLAN_DATA_JSON] ?: ""
+    }
+
+    val leagueHistoryJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_LEAGUE_HISTORY_JSON] ?: ""
+    }
+
+    val previousSeasonJson: Flow<String> = context.dataStore.data.map { preferences ->
+        preferences[KEY_PREVIOUS_SEASON_JSON] ?: ""
+    }
+
+    val activeSeasonIndex: Flow<Int> = context.dataStore.data.map { preferences ->
+        preferences[KEY_ACTIVE_SEASON_INDEX] ?: 0
     }
 
     suspend fun savePlayerTag(tag: String) {
@@ -59,6 +79,30 @@ class UserPreferences(private val context: Context) {
     suspend fun setDarkTheme(isDark: Boolean) {
         context.dataStore.edit { preferences ->
             preferences[KEY_IS_DARK_THEME] = isDark
+        }
+    }
+
+    suspend fun saveClanDataJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_CLAN_DATA_JSON] = json
+        }
+    }
+
+    suspend fun saveLeagueHistoryJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_LEAGUE_HISTORY_JSON] = json
+        }
+    }
+
+    suspend fun savePreviousSeasonJson(json: String) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_PREVIOUS_SEASON_JSON] = json
+        }
+    }
+
+    suspend fun saveActiveSeasonIndex(index: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[KEY_ACTIVE_SEASON_INDEX] = index
         }
     }
 }

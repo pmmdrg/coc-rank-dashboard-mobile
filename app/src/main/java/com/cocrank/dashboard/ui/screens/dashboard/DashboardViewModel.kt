@@ -22,9 +22,15 @@ import kotlinx.coroutines.launch
 
 import com.cocrank.dashboard.domain.model.ClanData
 import com.cocrank.dashboard.domain.model.LeagueHistoryItem
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 
 data class DashboardUiState(
     val season: Season? = null,
+    val currentSeason: Season? = null,
+    val previousSeason: Season? = null,
+    val allSeasons: List<Season> = emptyList(),
+    val activeSeasonIndex: Int = 0,
     val stats: RankingStats? = null,
     val clanData: ClanData? = null,
     val leagueHistory: List<LeagueHistoryItem> = emptyList(),
@@ -48,6 +54,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     private val database = AppDatabase.getDatabase(application)
     private val userPreferences = UserPreferences(application)
     val repository = RankRepository(database, userPreferences)
+    private val gson = Gson()
 
     private val _uiState = MutableStateFlow(
         DashboardUiState(
@@ -56,6 +63,8 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
         )
     )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
+
+    private var lastSyncRouteTime = 0L
 
     init {
         // Observe preferences
@@ -95,6 +104,54 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             }
         }
 
+        // Observe cached ClanData
+        viewModelScope.launch {
+            userPreferences.clanDataJson.collectLatest { json ->
+                if (json.isNotBlank()) {
+                    try {
+                        val cachedClan = gson.fromJson(json, ClanData::class.java)
+                        _uiState.update { it.copy(clanData = cachedClan) }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+        // Observe cached LeagueHistory
+        viewModelScope.launch {
+            userPreferences.leagueHistoryJson.collectLatest { json ->
+                if (json.isNotBlank()) {
+                    try {
+                        val listType = object : TypeToken<List<LeagueHistoryItem>>() {}.type
+                        val cachedHistory: List<LeagueHistoryItem> = gson.fromJson(json, listType)
+                        _uiState.update { it.copy(leagueHistory = cachedHistory) }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+        // Observe cached PreviousSeason
+        viewModelScope.launch {
+            userPreferences.previousSeasonJson.collectLatest { json ->
+                if (json.isNotBlank()) {
+                    try {
+                        val cachedPrev = gson.fromJson(json, Season::class.java)
+                        _uiState.update { state ->
+                            val cur = state.season ?: state.currentSeason
+                            val all = listOfNotNull(cur, cachedPrev)
+                            state.copy(previousSeason = cachedPrev, allSeasons = all)
+                        }
+                    } catch (_: Exception) {}
+                }
+            }
+        }
+
+        // Observe activeSeasonIndex
+        viewModelScope.launch {
+            userPreferences.activeSeasonIndex.collectLatest { idx ->
+                _uiState.update { it.copy(activeSeasonIndex = idx) }
+            }
+        }
+
         // Observe latest season from local DB
         viewModelScope.launch {
             repository.latestSeason.collectLatest { season ->
@@ -112,14 +169,79 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                             )
                         } else state.rankChanges
 
+                        val all = listOfNotNull(normalized, state.previousSeason)
+                        val displayed = if (state.activeSeasonIndex == 1 && state.previousSeason != null) state.previousSeason else normalized
+
                         state.copy(
-                            season = normalized,
-                            stats = stats,
+                            season = displayed,
+                            currentSeason = normalized,
+                            allSeasons = all,
+                            stats = RankingCalculator.getRankingStats(displayed, activeTag),
                             rankChanges = changes,
-                            filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+                            filteredPlayers = filterPlayers(displayed.players, state.searchQuery, state.selectedCategory)
                         )
                     }
                 }
+            }
+        }
+
+        // Tự động gọi API Supercell khi khởi động ứng dụng nếu đã lưu playerTag
+        viewModelScope.launch {
+            val tag = userPreferences.playerTag.first()
+            if (tag.isNotBlank()) {
+                syncData()
+            }
+        }
+    }
+
+    /**
+     * Tự động đồng bộ dữ liệu khi chuyển tab navigation (cooldown 2 giây)
+     */
+    fun triggerRouteSync(route: String) {
+        val now = System.currentTimeMillis()
+        if (now - lastSyncRouteTime < 2000L) return
+        lastSyncRouteTime = now
+
+        val activeTag = _uiState.value.savedPlayerTag.ifBlank { _uiState.value.season?.myPlayerId }
+        when (route) {
+            "personal", "season" -> {
+                if (!activeTag.isNullOrBlank() && !_uiState.value.isSyncing) {
+                    syncData()
+                }
+            }
+            "clan" -> {
+                val clanTag = _uiState.value.clanData?.tag
+                    ?: _uiState.value.stats?.myPlayer?.clanTag
+                    ?: _uiState.value.season?.players?.firstOrNull { it.isMe }?.clanTag
+                if (!clanTag.isNullOrBlank() && !_uiState.value.isSyncing) {
+                    syncClan()
+                } else if (!activeTag.isNullOrBlank() && !_uiState.value.isSyncing) {
+                    syncData()
+                }
+            }
+        }
+    }
+
+    /**
+     * Chọn mùa giải hiển thị: 0 (Mùa hiện tại), 1 (Mùa trước đó)
+     */
+    fun selectSeasonIndex(index: Int) {
+        val all = _uiState.value.allSeasons
+        if (index in all.indices) {
+            val target = all[index]
+            val tag = _uiState.value.savedPlayerTag.ifBlank { target.myPlayerId }
+            val normalized = RankingCalculator.normalizeSeason(target)
+            val stats = RankingCalculator.getRankingStats(normalized, tag)
+            _uiState.update { state ->
+                state.copy(
+                    activeSeasonIndex = index,
+                    season = normalized,
+                    stats = stats,
+                    filteredPlayers = filterPlayers(normalized.players, state.searchQuery, state.selectedCategory)
+                )
+            }
+            viewModelScope.launch {
+                userPreferences.saveActiveSeasonIndex(index)
             }
         }
     }
@@ -171,37 +293,34 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 return@launch
             }
 
-            _uiState.update { it.copy(isSyncing = true, syncMessage = "Đang đồng bộ CoC API...", errorMessage = null) }
+            _uiState.update { it.copy(isSyncing = true, syncMessage = "Đang đồng bộ Supercell API...", errorMessage = null) }
 
-            val result = repository.syncWithApi(
+            val result = repository.syncAllWithApi(
                 overrideTag = tag,
                 onProgress = { msg -> _uiState.update { it.copy(syncMessage = msg) } }
             )
 
-            result.onSuccess { newSeason ->
+            result.onSuccess { syncRes ->
                 val prev = _uiState.value.previousPlayers
+                val activeIndex = _uiState.value.activeSeasonIndex
+                val displayedSeason = if (activeIndex in syncRes.allSeasons.indices) syncRes.allSeasons[activeIndex] else syncRes.currentSeason
                 val changes = RankingCalculator.calculateRankChanges(
-                    currentSeason = newSeason,
+                    currentSeason = displayedSeason,
                     previousPlayers = prev,
                     myPlayerTag = tag
                 )
-                val myClanTag = newSeason.players.firstOrNull { it.isMe }?.clanTag
-                    ?: newSeason.players.firstOrNull { it.id == tag }?.clanTag
-
-                var syncedClan = _uiState.value.clanData
-                if (!myClanTag.isNullOrBlank()) {
-                    val clanRes = repository.getClanData(myClanTag)
-                    clanRes.onSuccess { syncedClan = it }
-                }
 
                 _uiState.update {
                     it.copy(
-                        season = newSeason,
-                        stats = RankingCalculator.getRankingStats(newSeason),
-                        clanData = syncedClan,
-                        leagueHistory = if (newSeason.leagueHistory.isNotEmpty()) newSeason.leagueHistory else it.leagueHistory,
+                        season = displayedSeason,
+                        currentSeason = syncRes.currentSeason,
+                        previousSeason = syncRes.previousSeason,
+                        allSeasons = syncRes.allSeasons,
+                        stats = RankingCalculator.getRankingStats(displayedSeason, tag),
+                        clanData = syncRes.clanData ?: it.clanData,
+                        leagueHistory = if (syncRes.leagueHistory.isNotEmpty()) syncRes.leagueHistory else it.leagueHistory,
                         rankChanges = changes,
-                        filteredPlayers = filterPlayers(newSeason.players, it.searchQuery, it.selectedCategory),
+                        filteredPlayers = filterPlayers(displayedSeason.players, it.searchQuery, it.selectedCategory),
                         isSyncing = false,
                         syncMessage = null,
                         errorMessage = null
@@ -232,6 +351,7 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
                 _uiState.update {
                     it.copy(clanData = clan, isSyncing = false, syncMessage = null)
                 }
+                userPreferences.saveClanDataJson(gson.toJson(clan))
             }.onFailure { err ->
                 _uiState.update {
                     it.copy(isSyncing = false, syncMessage = null, errorMessage = err.message ?: "Không thể tải Clan")

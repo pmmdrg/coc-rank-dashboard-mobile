@@ -1,15 +1,19 @@
 package com.cocrank.dashboard.data.repository
 
+import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.data.RankedTierMetadata
 import com.cocrank.dashboard.data.api.CocApiConfig
 import com.cocrank.dashboard.data.api.CocClanDetailResponse
 import com.cocrank.dashboard.data.api.CocApiService
+import com.cocrank.dashboard.data.api.CocGroupMember
 import com.cocrank.dashboard.data.api.NetworkModule
 import com.cocrank.dashboard.data.local.AppDatabase
 import com.cocrank.dashboard.data.local.SeasonEntity
 import com.cocrank.dashboard.data.local.UserPreferences
+import com.cocrank.dashboard.domain.model.BattleLogEntry
 import com.cocrank.dashboard.domain.model.ClanData
 import com.cocrank.dashboard.domain.model.ClanMember
+import com.cocrank.dashboard.domain.model.LeagueHistoryItem
 import com.cocrank.dashboard.domain.model.Player
 import com.cocrank.dashboard.domain.model.RankChangesSnapshot
 import com.cocrank.dashboard.domain.model.RatingCategory
@@ -21,8 +25,24 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import java.text.SimpleDateFormat
+import java.util.Calendar
 import java.util.Date
 import java.util.Locale
+import kotlin.math.roundToLong
+
+data class SeasonDatePeriod(
+    val startsAt: String,
+    val endsAt: String,
+    val displayPeriod: String
+)
+
+data class SyncResult(
+    val currentSeason: Season,
+    val previousSeason: Season?,
+    val allSeasons: List<Season>,
+    val clanData: ClanData?,
+    val leagueHistory: List<LeagueHistoryItem>
+)
 
 class RankRepository(
     private val database: AppDatabase,
@@ -30,6 +50,54 @@ class RankRepository(
 ) {
     private val gson = Gson()
     private val playerListType = object : TypeToken<List<Player>>() {}.type
+
+    companion object {
+        fun parseSeasonDateRange(seasonId: String?, fallbackStartsAt: String? = null): SeasonDatePeriod {
+            if (seasonId.isNullOrBlank() && fallbackStartsAt.isNullOrBlank()) {
+                return SeasonDatePeriod("", "", "--")
+            }
+            var startDate: Date? = null
+            val isoFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val vnFormat = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
+
+            if (!fallbackStartsAt.isNullOrBlank()) {
+                try {
+                    startDate = isoFormat.parse(fallbackStartsAt)
+                } catch (_: Exception) {}
+            }
+
+            if (startDate == null && !seasonId.isNullOrBlank()) {
+                val num = seasonId.toLongOrNull()
+                if (num != null && num > 1_000_000_000L) {
+                    val refTime = 1789966800L
+                    val cal = Calendar.getInstance().apply {
+                        set(2026, Calendar.SEPTEMBER, 22, 0, 0, 0)
+                        set(Calendar.MILLISECOND, 0)
+                    }
+                    val diffSec = num - refTime
+                    val diffDays = (diffSec / 86400.0).roundToLong()
+                    cal.add(Calendar.DAY_OF_YEAR, diffDays.toInt())
+                    startDate = cal.time
+                }
+            }
+
+            if (startDate == null) {
+                return SeasonDatePeriod("", "", "--")
+            }
+
+            val endCal = Calendar.getInstance().apply {
+                time = startDate
+                add(Calendar.DAY_OF_YEAR, 6)
+            }
+            val endDate = endCal.time
+
+            val startsAt = isoFormat.format(startDate)
+            val endsAt = isoFormat.format(endDate)
+            val displayPeriod = "${vnFormat.format(startDate)} - ${vnFormat.format(endDate)}"
+
+            return SeasonDatePeriod(startsAt, endsAt, displayPeriod)
+        }
+    }
 
     val latestSeason: Flow<Season?> = database.seasonDao().getLatestSeason().map { entity ->
         if (entity != null) {
@@ -81,35 +149,112 @@ class RankRepository(
         database.seasonDao().insertOrUpdate(entity)
     }
 
-    suspend fun syncWithApi(
+    private fun mapMembersToPlayers(
+        rawMembers: List<CocGroupMember>,
+        cleanTargetTag: String,
+        maxAttacks: Int,
+        maxDefenses: Int,
+        attackBattleLogs: List<BattleLogEntry>,
+        defenseBattleLogs: List<BattleLogEntry>
+    ): List<Player> {
+        val attackMap = attackBattleLogs.groupBy { it.opponentPlayerTag.trim().uppercase().removePrefix("#") }
+        val defenseMap = defenseBattleLogs.groupBy { it.opponentPlayerTag.trim().uppercase().removePrefix("#") }
+
+        val myAtkDest = if (attackBattleLogs.isNotEmpty()) {
+            Math.round(attackBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+        } else 0.0
+
+        val myAtkStars = if (attackBattleLogs.isNotEmpty()) {
+            Math.round(attackBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
+        } else 0.0
+
+        val myDefDest = if (defenseBattleLogs.isNotEmpty()) {
+            Math.round(defenseBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+        } else 0.0
+
+        val myDefStars = if (defenseBattleLogs.isNotEmpty()) {
+            Math.round(defenseBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
+        } else 0.0
+
+        return rawMembers.mapIndexed { index, m ->
+            val mTag = m.memberTag
+            val mName = m.memberName
+            val cups = m.memberCups
+            val cleanMemberTag = mTag.trim().uppercase().removePrefix("#")
+            val isMe = cleanTargetTag.isNotBlank() && cleanMemberTag == cleanTargetTag
+
+            val totalAttacks = m.attackWinCount + m.attackLoseCount
+            val totalDefenses = m.defenseWinCount + m.defenseLoseCount
+
+            val opponentAtkLogs = attackMap[cleanMemberTag] ?: emptyList()
+            val opponentDefLogs = defenseMap[cleanMemberTag] ?: emptyList()
+
+            val memberAtkDest = when {
+                isMe -> myAtkDest
+                opponentAtkLogs.isNotEmpty() -> Math.round(opponentAtkLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+                else -> 0.0
+            }
+
+            val memberDefDest = when {
+                isMe -> myDefDest
+                opponentDefLogs.isNotEmpty() -> Math.round(opponentDefLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
+                else -> 0.0
+            }
+
+            Player(
+                id = mTag,
+                name = mName,
+                rank = index + 1,
+                playerTag = mTag,
+                clanTag = m.memberClanTag,
+                clanName = m.memberClanName,
+                attacks = totalAttacks,
+                defenses = totalDefenses,
+                currentCups = cups,
+                attackWinCount = m.attackWinCount,
+                attackLoseCount = m.attackLoseCount,
+                defenseWinCount = m.defenseWinCount,
+                defenseLoseCount = m.defenseLoseCount,
+                attackDestruction = memberAtkDest,
+                defenseDestruction = memberDefDest,
+                attackAvgStars = if (isMe && myAtkStars > 0) myAtkStars else null,
+                defenseAvgStars = if (isMe && myDefStars > 0) myDefStars else null,
+                isMe = isMe
+            )
+        }
+    }
+
+    suspend fun syncAllWithApi(
         overrideTag: String? = null,
         onProgress: (String) -> Unit = {}
-    ): Result<Season> {
-        val tag = overrideTag ?: userPreferences.playerTag.first()
+    ): Result<SyncResult> {
+        val tag = overrideTag?.trim() ?: userPreferences.playerTag.first().trim()
         if (tag.isBlank()) {
             return Result.failure(Exception("Vui lòng nhập mã Player Tag (#TAG) để đồng bộ"))
         }
 
         val customToken = userPreferences.apiToken.first()
         val customProxy = userPreferences.proxyUrl.first()
-        val token = customToken.ifBlank { com.cocrank.dashboard.data.api.CocApiConfig.DEFAULT_API_TOKEN }
-        val proxy = customProxy.ifBlank { com.cocrank.dashboard.data.api.CocApiConfig.DEFAULT_PROXY_URL }
+        val token = customToken.ifBlank { CocApiConfig.DEFAULT_API_TOKEN }
+        val proxy = customProxy.ifBlank { CocApiConfig.DEFAULT_PROXY_URL }
 
         val service: CocApiService = NetworkModule.createService(proxy)
         val authHeader = if (token.isNotBlank()) "Bearer $token" else null
         val cleanTag = if (tag.startsWith("#")) tag else "#$tag"
         val encodedTag = cleanTag.replace("#", "%23")
+        val cleanTargetTag = cleanTag.trim().uppercase().removePrefix("#")
 
         onProgress("Đang kiểm tra thông tin người chơi $cleanTag...")
 
         return try {
+            // 1. Hồ sơ người chơi
             val playerRes = service.getPlayer(encodedTag, authHeader)
             if (!playerRes.isSuccessful || playerRes.body() == null) {
                 val msg = when (playerRes.code()) {
                     404 -> "Không tìm thấy người chơi với mã $cleanTag trên Supercell API."
-                    403 -> "Lỗi xác thực hoặc IP bị hạn chế (Mã: 403). Vui lòng thử lại sau ít phút."
-                    502, 503, 520, 525 -> "Máy chủ CoC Proxy đang bảo trì hoặc gián đoạn. Vui lòng thử lại."
-                    else -> "Lỗi khi đồng bộ dữ liệu CoC API (Mã lỗi: ${playerRes.code()})"
+                    403 -> "Lỗi xác thực hoặc IP bị hạn chế (Mã: 403). Vui lòng kiểm tra API Token hoặc thử lại."
+                    502, 503, 520, 525 -> "Máy chủ CoC Proxy đang bảo trì hoặc gián đoạn kết nối. Vui lòng thử lại sau ít phút."
+                    else -> "Lỗi khi gọi Supercell API (Mã lỗi: ${playerRes.code()})"
                 }
                 return Result.failure(Exception(msg))
             }
@@ -117,129 +262,24 @@ class RankRepository(
             val tierName = playerData.leagueTier?.name ?: "Legend III"
             val maxAttacks = RankedTierMetadata.getMaxAttacksForLeague(tierName)
 
-            // Lấy dữ liệu bảng giải đấu (League Group) chuẩn theo Supercell & RoyaleAPI Proxy
-            val groupTag = playerData.currentLeagueGroupTag ?: playerData.leagueGroup?.tag
-            val seasonId = playerData.currentLeagueSeasonId ?: playerData.leagueGroup?.seasonId
-            val members = mutableListOf<Player>()
-
-            if (!groupTag.isNullOrBlank() && !seasonId.isNullOrBlank()) {
-                onProgress("Đang tải bảng đấu giải $groupTag...")
-                val encodedGroupTag = groupTag.replace("#", "%23")
-                val groupRes = service.getLeagueGroup(
-                    groupTag = encodedGroupTag,
-                    seasonId = seasonId,
-                    playerTag = cleanTag,
-                    authHeader = authHeader
-                )
-                if (groupRes.isSuccessful && groupRes.body() != null) {
-                    val groupData = groupRes.body()!!
-                    val cleanTargetTag = cleanTag.trim().uppercase().removePrefix("#")
-
-                    val attackBattleLogs = groupData.attackLogs.map {
-                        com.cocrank.dashboard.domain.model.BattleLogEntry(
-                            opponentPlayerTag = it.opponentPlayerTag,
-                            opponentName = it.opponentName,
-                            stars = it.stars,
-                            destructionPercentage = it.destructionPercentage,
-                            trophies = it.trophies,
-                            creationTime = it.creationTime
-                        )
-                    }
-                    val defenseBattleLogs = groupData.defenseLogs.map {
-                        com.cocrank.dashboard.domain.model.BattleLogEntry(
-                            opponentPlayerTag = it.opponentPlayerTag,
-                            opponentName = it.opponentName,
-                            stars = it.stars,
-                            destructionPercentage = it.destructionPercentage,
-                            trophies = it.trophies,
-                            creationTime = it.creationTime
-                        )
-                    }
-
-                    val myAtkDest = if (attackBattleLogs.isNotEmpty()) {
-                        Math.round(attackBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
-                    } else 0.0
-
-                    val myAtkStars = if (attackBattleLogs.isNotEmpty()) {
-                        Math.round(attackBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
-                    } else 0.0
-
-                    val myDefDest = if (defenseBattleLogs.isNotEmpty()) {
-                        Math.round(defenseBattleLogs.map { it.destructionPercentage }.average() * 10.0) / 10.0
-                    } else 0.0
-
-                    val myDefStars = if (defenseBattleLogs.isNotEmpty()) {
-                        Math.round(defenseBattleLogs.map { it.stars.toDouble() }.average() * 10.0) / 10.0
-                    } else 0.0
-
-                    groupData.members.forEachIndexed { index, m ->
-                        val totalAttacks = m.attackWinCount + m.attackLoseCount
-                        val totalDefenses = m.defenseWinCount + m.defenseLoseCount
-                        val mTag = m.memberTag
-                        val mName = m.memberName
-                        val cups = m.memberCups
-                        val cleanMemberTag = mTag.trim().uppercase().removePrefix("#")
-                        val isMe = cleanTargetTag.isNotBlank() && cleanMemberTag == cleanTargetTag
-                        members.add(
-                            Player(
-                                id = mTag,
-                                name = mName,
-                                rank = index + 1,
-                                playerTag = mTag,
-                                clanTag = m.memberClanTag,
-                                clanName = m.memberClanName,
-                                attacks = totalAttacks,
-                                defenses = totalDefenses,
-                                currentCups = cups,
-                                attackWinCount = m.attackWinCount,
-                                attackLoseCount = m.attackLoseCount,
-                                defenseWinCount = m.defenseWinCount,
-                                defenseLoseCount = m.defenseLoseCount,
-                                attackDestruction = if (isMe) myAtkDest else 0.0,
-                                defenseDestruction = if (isMe) myDefDest else 0.0,
-                                attackAvgStars = if (isMe && myAtkStars > 0) myAtkStars else null,
-                                defenseAvgStars = if (isMe && myDefStars > 0) myDefStars else null,
-                                isMe = isMe
-                            )
-                        )
-                    }
-                }
-            }
-
-            // Nếu không thuộc bảng đấu cụ thể, tạo người chơi ở trạng thái chưa xếp hạng bảng đấu (rank = 0)
-            if (members.isEmpty()) {
-                members.add(
-                    Player(
-                        id = playerData.tag,
-                        name = playerData.name,
-                        rank = 0,
-                        playerTag = playerData.tag,
-                        clanTag = playerData.clan?.tag,
-                        clanName = playerData.clan?.name,
-                        attacks = playerData.attackWins,
-                        defenses = playerData.defenseWins,
-                        currentCups = playerData.trophies,
-                        isMe = true
-                    )
-                )
-            }
-
             val dateFormat = SimpleDateFormat("HH:mm:ss dd/MM", Locale.getDefault())
             val syncedTime = dateFormat.format(Date())
-            val leagueIconUrl = com.cocrank.dashboard.data.LeagueIcons.getLeagueIconUrl(
+            val leagueIconUrl = LeagueIcons.getLeagueIconUrl(
                 tierName,
                 playerData.leagueTier?.iconUrls?.medium
                     ?: playerData.leagueTier?.iconUrls?.large
                     ?: playerData.leagueTier?.iconUrls?.small
             )
 
-            // Lấy lịch sử mùa giải của người chơi
+            // 2. Lịch sử mùa giải
+            onProgress("Đang tải lịch sử mùa giải...")
             val historyItems = try {
                 val historyRes = service.getPlayerLeagueHistory(encodedTag, authHeader)
                 if (historyRes.isSuccessful && historyRes.body() != null) {
                     historyRes.body()!!.items.map { item ->
                         val itemTierName = RankedTierMetadata.getTierName(item.leagueTierId)
-                        com.cocrank.dashboard.domain.model.LeagueHistoryItem(
+                        val itemPeriod = parseSeasonDateRange(item.leagueSeasonId.toString())
+                        LeagueHistoryItem(
                             leagueSeasonId = item.leagueSeasonId,
                             leagueTrophies = item.leagueTrophies,
                             leagueTierId = item.leagueTierId,
@@ -249,38 +289,239 @@ class RankRepository(
                             defenseWins = item.defenseWins,
                             defenseLosses = item.defenseLosses,
                             tierName = itemTierName,
-                            displayPeriod = "Mùa #${item.leagueSeasonId}"
+                            displayPeriod = itemPeriod.displayPeriod
                         )
                     }
                 } else emptyList()
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 emptyList()
             }
 
-            val newSeason = Season(
-                league = tierName,
-                leagueIconUrl = leagueIconUrl,
-                seasonName = "${tierName} - ${SimpleDateFormat("MM/yyyy", Locale.getDefault()).format(Date())}",
-                startsAt = "",
-                endsAt = "",
-                maxAttacks = maxAttacks,
-                maxDefenses = maxAttacks,
-                promotionCount = 2,
-                demotionCount = 1,
-                myPlayerId = cleanTag,
-                players = members,
-                leagueGroupTag = groupTag,
-                leagueSeasonId = seasonId,
-                lastSyncedAt = syncedTime,
-                leagueHistory = if (historyItems.isNotEmpty()) historyItems else getSampleLeagueHistory()
-            )
+            // 3. Mùa giải hiện tại
+            val currentGroupTag = playerData.currentLeagueGroupTag ?: playerData.leagueGroup?.tag
+            val currentSeasonId = playerData.currentLeagueSeasonId ?: playerData.leagueGroup?.seasonId
 
-            val normalized = RankingCalculator.normalizeSeason(newSeason)
-            saveSeason(normalized)
-            Result.success(normalized)
+            var builtCurrentSeason: Season? = null
+            if (!currentGroupTag.isNullOrBlank() && !currentSeasonId.isNullOrBlank()) {
+                onProgress("Đang tải bảng đấu mùa hiện tại $currentGroupTag...")
+                val encodedCurrentGroupTag = currentGroupTag.replace("#", "%23")
+                try {
+                    val groupRes = service.getLeagueGroup(
+                        groupTag = encodedCurrentGroupTag,
+                        seasonId = currentSeasonId,
+                        playerTag = cleanTag,
+                        authHeader = authHeader
+                    )
+                    if (groupRes.isSuccessful && groupRes.body() != null) {
+                        val groupData = groupRes.body()!!
+                        val attackBattleLogs = groupData.attackLogs.map {
+                            BattleLogEntry(
+                                opponentPlayerTag = it.opponentPlayerTag,
+                                opponentName = it.opponentName,
+                                stars = it.stars,
+                                destructionPercentage = it.destructionPercentage,
+                                trophies = it.trophies,
+                                creationTime = it.creationTime
+                            )
+                        }
+                        val defenseBattleLogs = groupData.defenseLogs.map {
+                            BattleLogEntry(
+                                opponentPlayerTag = it.opponentPlayerTag,
+                                opponentName = it.opponentName,
+                                stars = it.stars,
+                                destructionPercentage = it.destructionPercentage,
+                                trophies = it.trophies,
+                                creationTime = it.creationTime
+                            )
+                        }
+                        val currentPeriod = parseSeasonDateRange(currentSeasonId)
+                        val members = mapMembersToPlayers(
+                            groupData.members,
+                            cleanTargetTag,
+                            maxAttacks,
+                            maxAttacks,
+                            attackBattleLogs,
+                            defenseBattleLogs
+                        )
+                        builtCurrentSeason = Season(
+                            league = tierName,
+                            leagueIconUrl = leagueIconUrl,
+                            seasonName = "Mùa giải hiện tại (${currentPeriod.displayPeriod})",
+                            startsAt = currentPeriod.startsAt,
+                            endsAt = currentPeriod.endsAt,
+                            maxAttacks = maxAttacks,
+                            maxDefenses = maxAttacks,
+                            promotionCount = 2,
+                            demotionCount = 1,
+                            myPlayerId = cleanTag,
+                            players = members,
+                            attackLogs = attackBattleLogs,
+                            defenseLogs = defenseBattleLogs,
+                            leagueGroupTag = currentGroupTag,
+                            leagueSeasonId = currentSeasonId,
+                            lastSyncedAt = syncedTime,
+                            leagueHistory = historyItems
+                        )
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 4. Mùa giải ngay trước đó
+            val prevGroupTag = playerData.previousLeagueGroupTag
+            val prevSeasonId = playerData.previousLeagueSeasonId
+
+            var builtPreviousSeason: Season? = null
+            if (!prevGroupTag.isNullOrBlank() && !prevSeasonId.isNullOrBlank()) {
+                onProgress("Đang tải bảng đấu mùa trước $prevGroupTag...")
+                val encodedPrevGroupTag = prevGroupTag.replace("#", "%23")
+                try {
+                    val prevRes = service.getLeagueGroup(
+                        groupTag = encodedPrevGroupTag,
+                        seasonId = prevSeasonId,
+                        playerTag = cleanTag,
+                        authHeader = authHeader
+                    )
+                    if (prevRes.isSuccessful && prevRes.body() != null) {
+                        val prevData = prevRes.body()!!
+                        val prevAttackLogs = prevData.attackLogs.map {
+                            BattleLogEntry(
+                                opponentPlayerTag = it.opponentPlayerTag,
+                                opponentName = it.opponentName,
+                                stars = it.stars,
+                                destructionPercentage = it.destructionPercentage,
+                                trophies = it.trophies,
+                                creationTime = it.creationTime
+                            )
+                        }
+                        val prevDefenseLogs = prevData.defenseLogs.map {
+                            BattleLogEntry(
+                                opponentPlayerTag = it.opponentPlayerTag,
+                                opponentName = it.opponentName,
+                                stars = it.stars,
+                                destructionPercentage = it.destructionPercentage,
+                                trophies = it.trophies,
+                                creationTime = it.creationTime
+                            )
+                        }
+                        val prevHistItem = historyItems.find { it.leagueSeasonId.toString() == prevSeasonId }
+                        val prevTierName = prevHistItem?.tierName?.ifBlank { null } ?: tierName
+                        val prevMaxAttacks = RankedTierMetadata.getMaxAttacksForLeague(prevTierName)
+                        val prevPeriod = parseSeasonDateRange(prevSeasonId)
+
+                        val prevMembers = mapMembersToPlayers(
+                            prevData.members,
+                            cleanTargetTag,
+                            prevMaxAttacks,
+                            prevMaxAttacks,
+                            prevAttackLogs,
+                            prevDefenseLogs
+                        )
+                        builtPreviousSeason = Season(
+                            league = prevTierName,
+                            leagueIconUrl = LeagueIcons.getLeagueIconUrl(prevTierName),
+                            seasonName = "Mùa giải trước (${prevPeriod.displayPeriod})",
+                            startsAt = prevPeriod.startsAt,
+                            endsAt = prevPeriod.endsAt,
+                            maxAttacks = prevMaxAttacks,
+                            maxDefenses = prevMaxAttacks,
+                            promotionCount = 2,
+                            demotionCount = 1,
+                            myPlayerId = cleanTag,
+                            players = prevMembers,
+                            attackLogs = prevAttackLogs,
+                            defenseLogs = prevDefenseLogs,
+                            leagueGroupTag = prevGroupTag,
+                            leagueSeasonId = prevSeasonId,
+                            lastSyncedAt = syncedTime,
+                            leagueHistory = historyItems
+                        )
+                    }
+                } catch (_: Exception) {}
+            }
+
+            // 5. Nếu không thuộc bảng đấu cụ thể nào, tạo người chơi dạng unranked
+            val effectiveCurrentSeason = builtCurrentSeason ?: if (builtPreviousSeason != null) {
+                builtPreviousSeason
+            } else {
+                val singlePlayer = Player(
+                    id = playerData.tag,
+                    name = playerData.name,
+                    rank = 0,
+                    playerTag = playerData.tag,
+                    clanTag = playerData.clan?.tag,
+                    clanName = playerData.clan?.name,
+                    attacks = playerData.attackWins,
+                    defenses = playerData.defenseWins,
+                    currentCups = playerData.trophies,
+                    isMe = true
+                )
+                Season(
+                    league = tierName,
+                    leagueIconUrl = leagueIconUrl,
+                    seasonName = "${tierName} - Chưa vào bảng đấu",
+                    startsAt = "",
+                    endsAt = "",
+                    maxAttacks = maxAttacks,
+                    maxDefenses = maxAttacks,
+                    promotionCount = 2,
+                    demotionCount = 1,
+                    myPlayerId = cleanTag,
+                    players = listOf(singlePlayer),
+                    leagueGroupTag = currentGroupTag,
+                    leagueSeasonId = currentSeasonId,
+                    lastSyncedAt = syncedTime,
+                    leagueHistory = historyItems
+                )
+            }
+
+            // 6. Đồng bộ thông tin Clan (nếu người chơi có tham gia Clan)
+            var syncedClanData: ClanData? = null
+            val clanTag = playerData.clan?.tag
+            if (!clanTag.isNullOrBlank()) {
+                onProgress("Đang tải dữ liệu Clan...")
+                try {
+                    val clanRes = getClanData(clanTag)
+                    clanRes.onSuccess { syncedClanData = it }
+                } catch (_: Exception) {}
+            }
+
+            val allSeasons = mutableListOf<Season>()
+            allSeasons.add(RankingCalculator.normalizeSeason(effectiveCurrentSeason))
+            if (builtPreviousSeason != null && builtPreviousSeason != effectiveCurrentSeason) {
+                allSeasons.add(RankingCalculator.normalizeSeason(builtPreviousSeason))
+            }
+
+            // Lưu cache toàn bộ dữ liệu vào Room và DataStore
+            saveSeason(allSeasons[0])
+            if (syncedClanData != null) {
+                userPreferences.saveClanDataJson(gson.toJson(syncedClanData))
+            }
+            if (historyItems.isNotEmpty()) {
+                userPreferences.saveLeagueHistoryJson(gson.toJson(historyItems))
+            }
+            if (builtPreviousSeason != null) {
+                userPreferences.savePreviousSeasonJson(gson.toJson(builtPreviousSeason))
+            }
+
+            Result.success(
+                SyncResult(
+                    currentSeason = allSeasons[0],
+                    previousSeason = builtPreviousSeason,
+                    allSeasons = allSeasons,
+                    clanData = syncedClanData,
+                    leagueHistory = if (historyItems.isNotEmpty()) historyItems else getSampleLeagueHistory()
+                )
+            )
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    suspend fun syncWithApi(
+        overrideTag: String? = null,
+        onProgress: (String) -> Unit = {}
+    ): Result<Season> {
+        return syncAllWithApi(overrideTag, onProgress).map { it.currentSeason }
     }
 
     suspend fun fetchClan(clanTag: String): Result<CocClanDetailResponse> {

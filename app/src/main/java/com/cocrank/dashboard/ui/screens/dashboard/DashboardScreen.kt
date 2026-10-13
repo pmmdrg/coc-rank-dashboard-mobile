@@ -55,7 +55,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.cocrank.dashboard.R
+import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.domain.model.RatingCategory
 import com.cocrank.dashboard.ui.components.PlayerItemCard
 import com.cocrank.dashboard.ui.components.SearchAndFilterBar
@@ -77,6 +82,7 @@ fun DashboardScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val season = state.season
     val stats = state.stats
+    val context = LocalContext.current
 
     var isOverviewCollapsed by remember { mutableStateOf(false) }
     var isHighlightsCollapsed by remember { mutableStateOf(false) }
@@ -168,6 +174,167 @@ fun DashboardScreen(
             contentPadding = PaddingValues(start = 16.dp, end = 16.dp, top = 8.dp, bottom = 96.dp),
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
+            // PHẦN THÔNG TIN MÙA GIẢI & BỘ CHỌN MÙA (Đồng bộ SeasonMetaForm trên Web)
+            item {
+                val leagueIconUrl = LeagueIcons.getLeagueIconUrl(season?.league, season?.leagueIconUrl)
+                val allSeasons = state.allSeasons
+                val activeIndex = state.activeSeasonIndex
+
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                    // Bộ chọn Mùa giải (Current Season / Previous Season)
+                    if (allSeasons.size > 1) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.surface)
+                                .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f), RoundedCornerShape(12.dp))
+                                .padding(4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            allSeasons.forEachIndexed { idx, _ ->
+                                val isSelected = activeIndex == idx
+                                val label = if (idx == 0) "Mùa giải hiện tại" else "Mùa giải trước đó"
+                                Box(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(if (isSelected) GoldAccent.copy(alpha = 0.18f) else Color.Transparent)
+                                        .border(
+                                            width = if (isSelected) 1.dp else 0.dp,
+                                            color = if (isSelected) GoldAccent.copy(alpha = 0.5f) else Color.Transparent,
+                                            shape = RoundedCornerShape(8.dp)
+                                        )
+                                        .clickable { viewModel.selectSeasonIndex(idx) }
+                                        .padding(vertical = 8.dp),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        text = label,
+                                        fontSize = 12.sp,
+                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                                        color = if (isSelected) GoldAccent else MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    // Card Thông tin Giải đấu & Thời gian mùa giải
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(16.dp))
+                            .background(MaterialTheme.colorScheme.surface)
+                            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.7f), RoundedCornerShape(16.dp))
+                            .padding(14.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            // Cột 1: Huy hiệu giải đấu & Tên bảng đấu
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(46.dp)
+                                        .clip(RoundedCornerShape(12.dp))
+                                        .background(GoldAccent.copy(alpha = 0.12f))
+                                        .border(1.dp, GoldAccent.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    AsyncImage(
+                                        model = ImageRequest.Builder(context)
+                                            .data(leagueIconUrl)
+                                            .crossfade(true)
+                                            .error(R.drawable.ph_trophy)
+                                            .placeholder(R.drawable.ph_trophy)
+                                            .build(),
+                                        contentDescription = season?.league,
+                                        modifier = Modifier.size(34.dp),
+                                        contentScale = ContentScale.Fit
+                                    )
+                                }
+                                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                                        Text(
+                                            text = season?.league ?: "--",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp,
+                                            color = MaterialTheme.colorScheme.onSurface
+                                        )
+                                        if (!season?.leagueGroupTag.isNullOrBlank()) {
+                                            Box(
+                                                modifier = Modifier
+                                                    .clip(RoundedCornerShape(4.dp))
+                                                    .background(GoldAccent.copy(alpha = 0.15f))
+                                                    .padding(horizontal = 5.dp, vertical = 1.dp)
+                                            ) {
+                                                Text(
+                                                    text = season!!.leagueGroupTag!!,
+                                                    fontSize = 10.sp,
+                                                    fontWeight = FontWeight.Bold,
+                                                    color = GoldAccent
+                                                )
+                                            }
+                                        }
+                                    }
+                                    val dateText = if (!season?.startsAt.isNullOrBlank() && !season?.endsAt.isNullOrBlank()) {
+                                        "${season!!.startsAt} → ${season!!.endsAt}"
+                                    } else season?.seasonName ?: "--"
+                                    Text(
+                                        text = dateText,
+                                        fontSize = 11.sp,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            // Cột 2: Thăng / Giáng
+                            Column(horizontalAlignment = Alignment.End, verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(Color(0xFF10B981).copy(alpha = 0.15f))
+                                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "Top ${season?.promotionCount ?: 2} Thăng",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = Color(0xFF10B981)
+                                        )
+                                    }
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(5.dp))
+                                            .background(RedAlarm.copy(alpha = 0.15f))
+                                            .padding(horizontal = 5.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "Top ${season?.demotionCount ?: 1} Giáng",
+                                            fontSize = 10.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            color = RedAlarm
+                                        )
+                                    }
+                                }
+                                Text(
+                                    text = "${season?.maxAttacks ?: 24} Lượt Công / Thủ",
+                                    fontSize = 10.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
             // MỤC 1: TỔNG QUAN MÙA GIẢI (SeasonOverviewSection)
             item {
                 val totalPlayers = season?.players?.size ?: 0

@@ -169,6 +169,7 @@ fun AppNavigation(
                 screens = bottomScreens,
                 currentRoute = currentRoute,
                 onNavigate = { screen ->
+                    viewModel.triggerRouteSync(screen.route)
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -200,27 +201,21 @@ fun LiquidCapsuleNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 24.dp),
+            .padding(horizontal = 20.dp),
         contentAlignment = Alignment.Center
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(64.dp)
-                .shadow(
-                    elevation = 14.dp,
-                    shape = RoundedCornerShape(32.dp),
-                    spotColor = Color.Black.copy(alpha = 0.35f),
-                    ambientColor = Color.Black.copy(alpha = 0.15f)
-                )
-                .clip(RoundedCornerShape(32.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.94f))
+                .height(58.dp)
+                .clip(RoundedCornerShape(30.dp))
+                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.75f),
-                    shape = RoundedCornerShape(32.dp)
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
+                    shape = RoundedCornerShape(30.dp)
                 )
-                .padding(horizontal = 6.dp, vertical = 5.dp)
+                .padding(horizontal = 5.dp, vertical = 4.dp)
         ) {
             val totalWidth = maxWidth
             val tabCount = screens.size
@@ -229,29 +224,29 @@ fun LiquidCapsuleNavigationBar(
             val targetPos = if (selectedIndex >= 0) selectedIndex.toFloat() else 0f
             val isVisible = selectedIndex >= 0
 
-            // Liquid bouncing indicator position with juicy iOS spring physics
+            // Liquid bouncing indicator position with spring physics
             val animatedPosition by animateFloatAsState(
                 targetValue = targetPos,
                 animationSpec = spring(
-                    dampingRatio = 0.68f, // Elastic liquid bounce
+                    dampingRatio = 0.72f,
                     stiffness = Spring.StiffnessMediumLow
                 ),
                 label = "liquid_indicator_offset"
             )
 
-            // Dynamic liquid pill indicator with generous breathing room
+            // Dynamic liquid pill indicator with comfortable padding and breathing room
             if (isVisible) {
                 Box(
                     modifier = Modifier
                         .offset(x = tabWidth * animatedPosition)
                         .width(tabWidth)
                         .fillMaxHeight()
-                        .padding(horizontal = 6.dp, vertical = 3.dp)
+                        .padding(horizontal = 2.dp, vertical = 2.dp)
                         .clip(RoundedCornerShape(26.dp))
                         .background(GoldAccent.copy(alpha = 0.16f))
                         .border(
                             width = 1.dp,
-                            color = GoldAccent.copy(alpha = 0.42f),
+                            color = GoldAccent.copy(alpha = 0.45f),
                             shape = RoundedCornerShape(26.dp)
                         )
                 )
@@ -265,9 +260,9 @@ fun LiquidCapsuleNavigationBar(
                 screens.forEachIndexed { index, screen ->
                     val isSelected = selectedIndex == index
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.08f else 0.95f,
+                        targetValue = if (isSelected) 1.05f else 0.95f,
                         animationSpec = spring(
-                            dampingRatio = 0.65f,
+                            dampingRatio = 0.7f,
                             stiffness = Spring.StiffnessMediumLow
                         ),
                         label = "tab_scale_$index"
@@ -296,16 +291,16 @@ fun LiquidCapsuleNavigationBar(
                             contentDescription = screen.title,
                             tint = tabColor,
                             modifier = Modifier
-                                .size(19.dp)
+                                .size(18.dp)
                                 .graphicsLayer {
                                     scaleX = iconScale
                                     scaleY = iconScale
                                 }
                         )
-                        Spacer(modifier = Modifier.height(1.5.dp))
+                        Spacer(modifier = Modifier.height(2.dp))
                         Text(
                             text = screen.title,
-                            fontSize = 10.5.sp,
+                            fontSize = 11.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             color = tabColor,
                             maxLines = 1
