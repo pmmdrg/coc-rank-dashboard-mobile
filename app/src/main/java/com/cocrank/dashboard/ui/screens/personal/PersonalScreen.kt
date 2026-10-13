@@ -62,7 +62,6 @@ import com.cocrank.dashboard.R
 import com.cocrank.dashboard.data.LeagueIcons
 import com.cocrank.dashboard.domain.usecase.RankingCalculator
 import com.cocrank.dashboard.ui.components.RatingBadge
-import com.cocrank.dashboard.ui.components.StatCard
 import com.cocrank.dashboard.ui.screens.dashboard.DashboardViewModel
 import com.cocrank.dashboard.ui.theme.GoldAccent
 import com.cocrank.dashboard.ui.theme.GreenSuperior
@@ -137,7 +136,8 @@ fun PersonalScreen(
                         Icon(
                             painter = painterResource(id = R.drawable.ph_gear),
                             contentDescription = "Cài đặt",
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.size(20.dp)
                         )
                     }
                 },
@@ -479,34 +479,7 @@ fun PersonalScreen(
                 }
             }
 
-            // Section 2: Kịch bản phân bổ thứ hạng
-            item {
-                val hasTournamentGroup = (season?.players?.size ?: 0) > 1
-
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    StatCard(
-                        title = "Rank thấp nhất",
-                        value = if (stats != null && stats.lowestPossibleRank > 0 && hasTournamentGroup) "#${stats.lowestPossibleRank}" else "--",
-                        subtitle = if (!hasTournamentGroup) "Chưa vào bảng đấu" else "Kịch bản xấu nhất",
-                        iconRes = R.drawable.ph_trend_down,
-                        accentColor = RedAlarm,
-                        modifier = Modifier.weight(1f)
-                    )
-                    StatCard(
-                        title = "Chắc chắn xếp dưới",
-                        value = if (hasTournamentGroup) "${stats?.playersDefinitelyBelowMe ?: 0} người" else "--",
-                        subtitle = if (hasTournamentGroup) "Không thể bị vượt" else "Chưa có bảng đấu",
-                        iconRes = R.drawable.ph_users,
-                        accentColor = Color(0xFFA855F7),
-                        modifier = Modifier.weight(1f)
-                    )
-                }
-            }
-
-            // Section 3: THEO DÕI PHONG ĐỘ & KỶ LỤC (Performance Trend & Records)
+            // Section 2: THEO DÕI PHONG ĐỘ & KỶ LỤC (Performance Trend & Records)
             item {
                 val leagueHistory = state.leagueHistory
                 val bestRankItem = RankingCalculator.findBestRankSeason(leagueHistory)

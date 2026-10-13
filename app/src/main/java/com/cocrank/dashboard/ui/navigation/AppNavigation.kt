@@ -39,6 +39,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
@@ -169,7 +170,6 @@ fun AppNavigation(
                 screens = bottomScreens,
                 currentRoute = currentRoute,
                 onNavigate = { screen ->
-                    viewModel.triggerRouteSync(screen.route)
                     if (currentRoute != screen.route) {
                         navController.navigate(screen.route) {
                             popUpTo(navController.graph.findStartDestination().id) {
@@ -201,21 +201,40 @@ fun LiquidCapsuleNavigationBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 20.dp),
+            .padding(horizontal = 22.dp),
         contentAlignment = Alignment.Center
     ) {
         BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(58.dp)
-                .clip(RoundedCornerShape(30.dp))
-                .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.96f))
+                .height(62.dp)
+                .shadow(
+                    elevation = 20.dp,
+                    shape = RoundedCornerShape(32.dp),
+                    spotColor = Color.Black.copy(alpha = 0.6f),
+                    ambientColor = Color.Black.copy(alpha = 0.35f)
+                )
+                .clip(RoundedCornerShape(32.dp))
+                .background(
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.75f),
+                            MaterialTheme.colorScheme.surface.copy(alpha = 0.86f)
+                        )
+                    )
+                )
                 .border(
                     width = 1.dp,
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.6f),
-                    shape = RoundedCornerShape(30.dp)
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            Color.White.copy(alpha = 0.28f),
+                            MaterialTheme.colorScheme.outline.copy(alpha = 0.35f),
+                            Color.White.copy(alpha = 0.06f)
+                        )
+                    ),
+                    shape = RoundedCornerShape(32.dp)
                 )
-                .padding(horizontal = 5.dp, vertical = 4.dp)
+                .padding(horizontal = 6.dp, vertical = 5.dp)
         ) {
             val totalWidth = maxWidth
             val tabCount = screens.size
@@ -224,29 +243,47 @@ fun LiquidCapsuleNavigationBar(
             val targetPos = if (selectedIndex >= 0) selectedIndex.toFloat() else 0f
             val isVisible = selectedIndex >= 0
 
-            // Liquid bouncing indicator position with spring physics
+            // Liquid bouncing indicator position with fluid spring physics
             val animatedPosition by animateFloatAsState(
                 targetValue = targetPos,
                 animationSpec = spring(
-                    dampingRatio = 0.72f,
+                    dampingRatio = 0.68f,
                     stiffness = Spring.StiffnessMediumLow
                 ),
                 label = "liquid_indicator_offset"
             )
 
-            // Dynamic liquid pill indicator with comfortable padding and breathing room
+            // Dynamic liquid pill indicator with luminous glass sheen
             if (isVisible) {
                 Box(
                     modifier = Modifier
                         .offset(x = tabWidth * animatedPosition)
                         .width(tabWidth)
                         .fillMaxHeight()
-                        .padding(horizontal = 2.dp, vertical = 2.dp)
+                        .padding(horizontal = 3.dp, vertical = 2.dp)
+                        .shadow(
+                            elevation = 8.dp,
+                            shape = RoundedCornerShape(26.dp),
+                            spotColor = GoldAccent.copy(alpha = 0.45f),
+                            ambientColor = GoldAccent.copy(alpha = 0.2f)
+                        )
                         .clip(RoundedCornerShape(26.dp))
-                        .background(GoldAccent.copy(alpha = 0.16f))
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    GoldAccent.copy(alpha = 0.26f),
+                                    GoldAccent.copy(alpha = 0.12f)
+                                )
+                            )
+                        )
                         .border(
                             width = 1.dp,
-                            color = GoldAccent.copy(alpha = 0.45f),
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    GoldAccent.copy(alpha = 0.75f),
+                                    GoldAccent.copy(alpha = 0.25f)
+                                )
+                            ),
                             shape = RoundedCornerShape(26.dp)
                         )
                 )
@@ -260,15 +297,15 @@ fun LiquidCapsuleNavigationBar(
                 screens.forEachIndexed { index, screen ->
                     val isSelected = selectedIndex == index
                     val iconScale by animateFloatAsState(
-                        targetValue = if (isSelected) 1.05f else 0.95f,
+                        targetValue = if (isSelected) 1.12f else 0.92f,
                         animationSpec = spring(
-                            dampingRatio = 0.7f,
+                            dampingRatio = 0.68f,
                             stiffness = Spring.StiffnessMediumLow
                         ),
                         label = "tab_scale_$index"
                     )
                     val tabColor by animateColorAsState(
-                        targetValue = if (isSelected) GoldAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                        targetValue = if (isSelected) GoldAccent else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.75f),
                         animationSpec = tween(durationMillis = 200),
                         label = "tab_color_$index"
                     )
@@ -291,7 +328,7 @@ fun LiquidCapsuleNavigationBar(
                             contentDescription = screen.title,
                             tint = tabColor,
                             modifier = Modifier
-                                .size(18.dp)
+                                .size(19.dp)
                                 .graphicsLayer {
                                     scaleX = iconScale
                                     scaleY = iconScale

@@ -64,8 +64,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
     )
     val uiState: StateFlow<DashboardUiState> = _uiState.asStateFlow()
 
-    private var lastSyncRouteTime = 0L
-
     init {
         // Observe preferences
         viewModelScope.launch {
@@ -190,34 +188,6 @@ class DashboardViewModel(application: Application) : AndroidViewModel(applicatio
             val tag = userPreferences.playerTag.first()
             if (tag.isNotBlank()) {
                 syncData()
-            }
-        }
-    }
-
-    /**
-     * Tự động đồng bộ dữ liệu khi chuyển tab navigation (cooldown 2 giây)
-     */
-    fun triggerRouteSync(route: String) {
-        val now = System.currentTimeMillis()
-        if (now - lastSyncRouteTime < 2000L) return
-        lastSyncRouteTime = now
-
-        val activeTag = _uiState.value.savedPlayerTag.ifBlank { _uiState.value.season?.myPlayerId }
-        when (route) {
-            "personal", "season" -> {
-                if (!activeTag.isNullOrBlank() && !_uiState.value.isSyncing) {
-                    syncData()
-                }
-            }
-            "clan" -> {
-                val clanTag = _uiState.value.clanData?.tag
-                    ?: _uiState.value.stats?.myPlayer?.clanTag
-                    ?: _uiState.value.season?.players?.firstOrNull { it.isMe }?.clanTag
-                if (!clanTag.isNullOrBlank() && !_uiState.value.isSyncing) {
-                    syncClan()
-                } else if (!activeTag.isNullOrBlank() && !_uiState.value.isSyncing) {
-                    syncData()
-                }
             }
         }
     }
